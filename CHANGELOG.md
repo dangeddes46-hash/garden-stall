@@ -1,5 +1,22 @@
 # Changelog — The Garden Stall
 
+## 2026-06-29 — Foundation document filing update
+
+Added uploaded foundation documents to the repository filing plan:
+
+- Document 1 — Pre-Production Foundation Brief
+- Document 2 — Core Vision Brief
+- Document 3 — Plant Schema and Tag Bible
+- Document 4 — Customer and Request System
+- Document 5 — Location Specification
+
+Updated:
+
+- PROJECT_INDEX
+- CURRENT_STATUS
+
+Documents 1–17 are now filed or ready for filing.
+
 ## 2026-06-29 — v0.1-docs-foundation
 
 Initial foundation Codex prepared for GitHub filing.

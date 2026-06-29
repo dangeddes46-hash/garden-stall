@@ -2,7 +2,7 @@
 
 ## Phase
 
-Pre-production moving into repository setup.
+Pre-production Codex foundation established; repository setup in progress/completed.
 
 ## Current Milestone
 
@@ -16,7 +16,8 @@ The GitHub repository is the permanent Codex once the accepted foundation docume
 
 Documents 1–17 define:
 
-- project vision
+- pre-production foundation
+- core vision
 - plant schema
 - customer/request system
 - locations
@@ -36,22 +37,19 @@ Documents 1–17 define:
 
 ## Current Priority
 
-Set up repository, file accepted documents, create root index/status/changelog/Reading Pack, then prepare for prototype build.
+Complete the document filing update, then open the Graphics / Artist window using the repository as source of truth.
 
 ## Recommended Next Actions
 
-1. Create GitHub repository `garden-stall`.
-2. File all accepted documents.
-3. Create root docs.
-4. Create Reading Pack.
-5. Commit and push initial Codex.
-6. Tag `v0.1-docs-foundation`.
-7. Prepare first implementation task from Document 13 and Document 16.
+1. Add Documents 1–5 to the repository.
+2. Update PROJECT_INDEX and CHANGELOG.
+3. Commit and push the document filing update.
+4. Open Graphics / Artist window with the standard repository source-of-truth prompt.
+5. Begin visual bible/style exploration from Document 15.
 
 ## Known Risks
 
 - Scope is large for a first prototype.
 - Real-time trading needs strong debug/simulation controls.
 - Art direction must not delay systems testing.
-- Repository must become source of truth quickly to avoid chat-memory drift.
-- Documents 1–5 need to be filed if they are not already included in the starter pack.
+- Repository must remain source of truth to avoid chat-memory drift.

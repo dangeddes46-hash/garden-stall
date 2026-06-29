@@ -6,17 +6,17 @@ This index lists the current accepted project documents.
 
 | Document | Path | Status | Purpose |
 |---|---|---|---|
-| Document 1 | `/docs/design/core/Document 1 — Pre-Production Foundation Brief.md` | Pending File | Initial foundation brief |
-| Document 2 | `/docs/design/core/Document 2 — Core Vision Brief.md` | Pending File | Core game identity and vision |
+| Document 1 | `/docs/design/core/Document 1 — Pre-Production Foundation Brief.md` | Accepted Draft | Initial pre-production foundation brief |
+| Document 2 | `/docs/design/core/Document 2 — Core Vision Brief.md` | Accepted Draft | Core game identity and vision |
 | Document 6 | `/docs/design/core/Document 6 — Core Loop Specification.md` | Accepted Draft | Main daily and weekly gameplay loop |
 
 ## System Design
 
 | Document | Path | Status | Purpose |
 |---|---|---|---|
-| Document 3 | `/docs/design/systems/Document 3 — Plant Schema and Tag Bible.md` | Pending File | Plant data, tags, and stock logic |
-| Document 4 | `/docs/design/systems/Document 4 — Customer and Request System.md` | Pending File | Customers, archetypes, requests |
-| Document 5 | `/docs/design/systems/Document 5 — Location Specification.md` | Pending File | Locations and trading sites |
+| Document 3 | `/docs/design/systems/Document 3 — Plant Schema and Tag Bible.md` | Accepted Draft | Plant data, tags, and stock logic |
+| Document 4 | `/docs/design/systems/Document 4 — Customer and Request System.md` | Accepted Draft | Customers, archetypes, requests |
+| Document 5 | `/docs/design/systems/Document 5 — Location Specification.md` | Accepted Draft | Locations and trading sites |
 | Document 8 | `/docs/design/systems/Document 8 — Wholesaler Interface Specification.md` | Accepted Draft | Supplier and ordering interface |
 | Document 9 | `/docs/design/systems/Document 9 — Display and Merchandising Specification.md` | Accepted Draft | Stall display and tray management |
 | Document 10 | `/docs/design/systems/Document 10 — Economy, Pricing and Stock Condition Specification.md` | Accepted Draft | Cash, fees, pricing, degradation |
@@ -48,4 +48,4 @@ This index lists the current accepted project documents.
 
 ## Filing Note
 
-This starter pack includes Documents 6–17. Documents 1–5 should be added to the paths above when available, then their status should be changed from `Pending File` to `Accepted Draft`.
+Documents 1–17 are now filed or ready for filing.
