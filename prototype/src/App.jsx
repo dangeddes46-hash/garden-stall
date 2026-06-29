@@ -1,11 +1,12 @@
 import { useMemo, useReducer, useState } from 'react';
-import { PHASES, PHASE_LABELS, VAN_CAPACITY, DISPLAY_ZONES } from './data/constants.js';
+import { PHASES, PHASE_LABELS, DISPLAY_ZONES } from './data/constants.js';
+import { VAN_LOAD_LIMITS } from './data/vanCapacity.js';
 import { getSupplierListingsForDay } from './data/supplierListings.js';
 import { plantById } from './data/plants.js';
 import { locations, locationById } from './data/locations.js';
 import { weekDayByNumber } from './data/weekScript.js';
 import { calculateCart } from './systems/orderSystem.js';
-import { getStockByLocation, getVanCount } from './systems/stockSystem.js';
+import { getStockByLocation, getVanLoadSummary } from './systems/stockSystem.js';
 import { createDebugExport, createMarkdownReport } from './systems/reportSystem.js';
 import { initialState } from './state/initialState.js';
 import { reducer } from './state/reducer.js';
@@ -195,19 +196,23 @@ function StockList({ title, batches, emptyText, actionLabel, actionType, dispatc
 function VanLoadoutScreen({ state, dispatch }) {
   const homeStock = getStockByLocation(state.stockBatches, 'home');
   const vanStock = getStockByLocation(state.stockBatches, 'van');
-  const vanCount = getVanCount(state.stockBatches);
+  const vanLoad = getVanLoadSummary(state.stockBatches);
 
   return (
     <div className="screen-grid">
       <Card>
         <p className="eyebrow">Home Stock</p>
         <h2>Load the van</h2>
-        <p className="muted">Van capacity is {VAN_CAPACITY} units for this first pass.</p>
+        <p className="muted">Van capacity is {VAN_LOAD_LIMITS.traySlots} trays plus {VAN_LOAD_LIMITS.featurePots} loose/feature potted plants.</p>
         <StockList title="Home stock" batches={homeStock} emptyText="No stock at home." actionLabel="Load" actionType="LOAD_TO_VAN" dispatch={dispatch} />
       </Card>
       <Card>
         <h2>Van</h2>
-        <p className="muted">Loaded: {vanCount} / {VAN_CAPACITY} units</p>
+        <div className="totals">
+          <div><span>Tray spaces</span><strong>{vanLoad.traySlots} / {VAN_LOAD_LIMITS.traySlots}</strong></div>
+          <div><span>Feature pots</span><strong>{vanLoad.featurePots} / {VAN_LOAD_LIMITS.featurePots}</strong></div>
+          <div><span>Batches</span><strong>{vanLoad.batchCount}</strong></div>
+        </div>
         <StockList title="Van stock" batches={vanStock} emptyText="The van is empty." actionLabel="Unload" actionType="UNLOAD_TO_HOME" dispatch={dispatch} />
         <button disabled={vanStock.length === 0} onClick={() => dispatch({ type: 'ADVANCE_PHASE' })}>Confirm loadout</button>
       </Card>
