@@ -1,5 +1,19 @@
 # Changelog — The Garden Stall
 
+## 2026-06-29 — B-001 implementation plan filed
+
+Added approved Builder implementation reference:
+
+- B-001 — Prototype 0.1 Implementation Plan
+- Path: `/docs/implementation/build-plans/B-001 — Prototype 0.1 Implementation Plan.md`
+
+Updated:
+
+- PROJECT_INDEX
+- CURRENT_STATUS
+
+B-001 defines the practical first-build plan for the smallest playable Prototype 0.1 implementation, including app structure, data modules, screens, systems, debug/admin controls, simplifications, risks, and build order.
+
 ## 2026-06-29 — Foundation document filing update
 
 Added uploaded foundation documents to the repository filing plan:
