@@ -2,11 +2,11 @@
 
 ## Phase
 
-Pre-production Codex foundation established; Builder implementation planning has begun.
+Prototype 0.1 implementation has begun from B-001.
 
 ## Current Milestone
 
-`v0.1-prototype-planning`
+`v0.1-first-code-pass`
 
 ## Current Source of Truth
 
@@ -42,20 +42,46 @@ Documents 1–17 define:
   - Status: Approved Implementation Reference
   - Purpose: Practical build-facing plan for the smallest playable Prototype 0.1 implementation.
 
+## Current Prototype State
+
+The first B-001 implementation target has been started in `/prototype/`.
+
+Implemented:
+
+- Vite + React + JavaScript app shell
+- static data modules for plants, locations, supplier listings, customer archetypes, customer seeds, special requests, notebook discoveries, and first-week script
+- reducer-based phase loop skeleton
+- Day 0 County Plant Wholesale order flow
+- Day 1 morning collection flow that converts pending orders into home stock batches
+- basic location, van loadout, route, display, trading, and daily summary placeholder screens
+- debug/admin panel with cash tools, phase jump, next-day jump, reset, JSON export, and Markdown report export
+
+Still placeholder:
+
+- passive customer simulation
+- special request scoring
+- display scoring and proper zone capacity enforcement
+- condition degradation
+- detailed daily and weekly summaries
+- notebook unlock behaviour
+- staff pressure metrics
+- final artwork and visual polish
+
 ## Current Priority
 
-Begin Prototype 0.1 implementation from B-001, starting with the `/prototype/` app shell, static data foundation, phase loop skeleton, Day 0 wholesaler order, Day 1 collection, and debug reset/export scaffolding.
+Run the `/prototype/` app locally, confirm the first pass loads, and then implement the next narrow target: display zone capacity/scoring plus passive customer wave simulation.
 
 ## Recommended Next Actions
 
-1. Create the `/prototype/` Vite/React/JavaScript app shell.
-2. Add initial data modules for constants, plants, locations, supplier listings, customer archetypes, requests, notebook data, and week script.
-3. Implement the phase loop skeleton from Day 0 order through weekly summary.
-4. Add mandatory debug/admin reset and export scaffolding early.
-5. Keep all implementation within accepted Prototype 0.1 scope.
+1. Run `cd prototype && npm install && npm run dev` locally.
+2. Confirm Day 0 order → Day 1 collection → weather → location → van loadout → route → display → trading placeholder → daily summary works.
+3. Fix any local runtime issues found by Vite.
+4. Implement display zone capacity and readable display score.
+5. Implement passive customer wave simulation before special request scoring.
 
 ## Known Risks
 
+- This code pass has not yet been run in a local Vite environment by the Builder window.
 - Scope is large for a first prototype.
 - Real-time trading should be implemented as a testable wave/timer system first, with pauseable menus and strong debug controls.
 - Display must remain tray/slot based and not become pixel-placement.
