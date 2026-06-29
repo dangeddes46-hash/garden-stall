@@ -1,0 +1,285 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #2d271d;
+  background: #f4efe4;
+  line-height: 1.5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+select {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  background: #436b3c;
+  color: #fffaf0;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+button.secondary {
+  background: #836244;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 1.25rem;
+}
+
+.top-bar {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: stretch;
+  background: #fffaf0;
+  border: 1px solid #dccfb6;
+  border-radius: 24px;
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgba(65, 48, 30, 0.08);
+}
+
+.top-bar h1 {
+  margin-bottom: 0;
+}
+
+.eyebrow {
+  color: #836244;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(100px, 1fr));
+  gap: 0.6rem;
+  min-width: 55%;
+}
+
+.status-grid div,
+.totals div {
+  background: #f8f1df;
+  border-radius: 16px;
+  padding: 0.75rem;
+}
+
+.status-grid span,
+.totals span {
+  display: block;
+  color: #766954;
+  font-size: 0.78rem;
+}
+
+.location-banner {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 16px;
+  background: #e4efd9;
+  border: 1px solid #c8d9bc;
+}
+
+.main-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.card,
+.debug-panel {
+  background: #fffaf0;
+  border: 1px solid #dccfb6;
+  border-radius: 24px;
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgba(65, 48, 30, 0.08);
+}
+
+.screen-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.screen-grid.wide-left {
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 0.85fr);
+}
+
+.listing-grid,
+.location-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.75rem;
+}
+
+.listing,
+.location-card,
+.row-card,
+.zone {
+  background: #f8f1df;
+  border: 1px solid #e1d3b9;
+  border-radius: 18px;
+  padding: 0.85rem;
+}
+
+.location-card.selected {
+  outline: 3px solid #789f5b;
+}
+
+.muted-card {
+  opacity: 0.55;
+}
+
+.listing-title,
+.row-card,
+.row-actions,
+.button-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.row-actions {
+  flex-shrink: 0;
+}
+
+.stack {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.totals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pill.ok {
+  background: #dcefd0;
+  color: #315b2b;
+}
+
+.pill.danger {
+  background: #ead6ce;
+  color: #7c3828;
+}
+
+.muted,
+.fine-print {
+  color: #766954;
+}
+
+.fine-print {
+  font-size: 0.86rem;
+}
+
+.display-zones,
+.button-grid {
+  display: grid;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.button-grid {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.debug-panel {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+}
+
+.debug-panel label {
+  display: grid;
+  gap: 0.35rem;
+  font-weight: 700;
+  margin: 0.75rem 0;
+}
+
+.debug-panel select,
+.debug-panel textarea {
+  width: 100%;
+  border: 1px solid #d3c5ab;
+  border-radius: 12px;
+  padding: 0.6rem;
+  background: #fffaf0;
+  color: #2d271d;
+}
+
+.debug-panel textarea {
+  min-height: 220px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.78rem;
+}
+
+.debug-log {
+  padding-left: 1.25rem;
+  color: #5d503f;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 1050px) {
+  .top-bar,
+  .main-layout,
+  .screen-grid,
+  .screen-grid.wide-left {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .status-grid {
+    min-width: 0;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .debug-panel {
+    position: static;
+    max-height: none;
+  }
+}
