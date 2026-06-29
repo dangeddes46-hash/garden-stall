@@ -1,5 +1,23 @@
 # Changelog — The Garden Stall
 
+## 2026-06-29 — Van capacity correction
+
+Adjusted the prototype van loadout model after first local smoke test feedback.
+
+Changed:
+
+- Added `prototype/src/data/vanCapacity.js`
+- Updated `prototype/src/systems/stockSystem.js`
+- Updated `prototype/src/state/reducer.js`
+- Updated `prototype/src/App.jsx`
+
+Van capacity now uses:
+
+- 6 tray spaces
+- 6 loose/feature potted plants
+
+This replaces the first-pass behaviour where the van counted individual plant units, causing one tray of six plants to consume six capacity.
+
 ## 2026-06-29 — First Prototype 0.1 code pass
 
 Started implementation from B-001 in `/prototype/`.
