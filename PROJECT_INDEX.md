@@ -36,6 +36,7 @@ This index lists the current accepted project documents.
 | Document | Path | Status | Purpose |
 |---|---|---|---|
 | Document 13 | `/docs/implementation/build-briefs/Document 13 — Prototype 0.1 Build Brief.md` | Accepted Draft | Implementation-facing copy of build brief |
+| B-001 | `/docs/implementation/build-plans/B-001 — Prototype 0.1 Implementation Plan.md` | Approved Implementation Reference | Practical build-facing plan for Prototype 0.1 implementation |
 | Document 14 | `/docs/implementation/architecture/Document 14 — Repository and Codex Structure.md` | Accepted Draft | Repository workflow and Codex structure |
 | Document 16 | `/docs/implementation/data-schemas/Document 16 — Data Schema Specification.md` | Accepted Draft | Prototype data model |
 | Document 17 | `/docs/implementation/architecture/Document 17 — Initial GitHub Repository Setup Pack.md` | Accepted Draft | Repository setup workflow |
@@ -48,4 +49,4 @@ This index lists the current accepted project documents.
 
 ## Filing Note
 
-Documents 1–17 are now filed or ready for filing.
+Documents 1–17 are filed or ready for filing. B-001 is now filed as the approved implementation reference for the first playable Prototype 0.1 build.
