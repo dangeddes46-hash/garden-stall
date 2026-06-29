@@ -1,4 +1,4 @@
-import { PHASES, STARTING_CASH, VAN_CAPACITY } from '../data/constants.js';
+import { PHASES, STARTING_CASH } from '../data/constants.js';
 import { weekDayByNumber } from '../data/weekScript.js';
 import { calculateCart, createPendingOrder, createStockBatchesFromOrder } from '../systems/orderSystem.js';
 import { canLoadBatchToVan, moveStockBatch, resetDisplayToVan } from '../systems/stockSystem.js';
@@ -94,7 +94,7 @@ export function reducer(state, action) {
       return log({ ...state, phase: PHASES.DISPLAY_SETUP }, 'Confirmed route and operating costs placeholder.');
 
     case 'LOAD_TO_VAN': {
-      if (!canLoadBatchToVan(state.stockBatches, action.batchId)) return log(state, `Load blocked: van capacity is ${VAN_CAPACITY} units.`);
+      if (!canLoadBatchToVan(state.stockBatches, action.batchId)) return log(state, 'Load blocked: van capacity is 6 trays and 6 feature potted plants.');
       return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'van') }, 'Loaded stock batch into van.');
     }
 
