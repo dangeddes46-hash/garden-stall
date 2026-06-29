@@ -1,5 +1,32 @@
 # Changelog — The Garden Stall
 
+## 2026-06-29 — First Prototype 0.1 code pass
+
+Started implementation from B-001 in `/prototype/`.
+
+Added:
+
+- Vite + React + JavaScript app shell
+- `prototype/package.json`
+- `prototype/index.html`
+- `prototype/src/main.jsx`
+- `prototype/src/App.jsx`
+- `prototype/src/styles.css`
+- static data modules for constants, plants, locations, supplier listings, customer archetypes, customer seeds, special requests, notebook discoveries, and first-week script
+- reducer-based initial state and phase flow
+- order, stock, and report helper systems
+- Day 0 wholesaler order flow
+- Day 1 collection flow
+- placeholder screens for weather, location, van loadout, route, display setup, trading, and daily summary
+- debug/admin reset, phase jump, cash tools, next-day jump, JSON export, and Markdown report export
+
+Updated:
+
+- `prototype/README.md`
+- `CURRENT_STATUS.md`
+
+No backend, save/load, TypeScript, drag-and-drop display, staff implementation, or final art dependency was added.
+
 ## 2026-06-29 — B-001 implementation plan filed
 
 Added approved Builder implementation reference:
