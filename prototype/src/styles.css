@@ -179,10 +179,23 @@ p {
   flex-shrink: 0;
 }
 
+.row-actions.wrap-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.row-actions.wrap-actions button {
+  padding: 0.5rem 0.75rem;
+}
+
 .stack {
   display: grid;
   gap: 0.65rem;
   margin-bottom: 1rem;
+}
+
+.request-log {
+  margin-top: 1rem;
 }
 
 .totals {
