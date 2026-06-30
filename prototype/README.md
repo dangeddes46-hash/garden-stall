@@ -1,16 +1,22 @@
 # Garden Stall Prototype 0.1
 
-First browser prototype pass for The Garden Stall.
+Browser prototype for The Garden Stall.
 
-This pass implements only the first B-001 implementation target:
+Current implemented slice:
 
 - Vite + React + JavaScript app shell
 - static data foundation
 - phase loop skeleton
 - Day 0 wholesaler order
 - Day 1 morning collection
+- tray-grid batch profiles: 2x3, 4x6, 3x5, feature pot groups, and sundry packs
+- van capacity model: 6 tray spaces plus 6 loose/feature potted plants
 - basic home stock / van loadout flow
-- placeholder location, route, display, trading, and summary screens
+- location, route, display, trading, and daily summary screens
+- display slot capacity enforcement
+- simple display score and display rating
+- passive customer wave simulation
+- trading log with sales, revenue, and missed demand
 - debug reset, phase jump, cash tools, next-day jump, JSON export, and Markdown report export
 
 ## Run locally
@@ -25,18 +31,18 @@ npm run dev
 
 Then open the local Vite URL shown in the terminal.
 
+After pulling changes, restart Vite if it was already running.
+
 ## Current limitations
 
 This is not yet the full Prototype 0.1 gameplay loop.
 
 Still placeholder:
 
-- passive customer sales
 - special request scoring
-- display scoring
-- zone capacity enforcement
 - condition degradation
-- daily/weekly summary detail
+- full zone-specific display placement
+- detailed weekly summary
 - notebook unlocking
 - staff pressure metrics
 - final art and visual direction
