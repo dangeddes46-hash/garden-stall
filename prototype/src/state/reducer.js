@@ -2,6 +2,7 @@ import { PHASES, STARTING_CASH } from '../data/constants.js';
 import { weekDayByNumber } from '../data/weekScript.js';
 import { calculateCart, createPendingOrder, createStockBatchesFromOrder } from '../systems/orderSystem.js';
 import { canLoadBatchToVan, moveStockBatch, resetDisplayToVan } from '../systems/stockSystem.js';
+import { simulateCustomerWave } from '../systems/customerSystem.js';
 import { initialState } from './initialState.js';
 
 function log(state, message) {
@@ -53,14 +54,15 @@ export function reducer(state, action) {
       if (state.cart.length === 0) return log(state, 'Order blocked: cart is empty.');
       if (totals.total > state.cash) return log(state, 'Order blocked: not enough cash.');
       const order = createPendingOrder({ dayPlaced: state.currentDay, cart: state.cart });
-      const nextPhase = state.currentDay === 0 ? PHASES.MORNING_COLLECTION : PHASES.MORNING_COLLECTION;
       return log({
         ...state,
         cash: state.cash - order.total,
         pendingOrders: [...state.pendingOrders, order],
         cart: [],
         currentDay: state.currentDay === 0 ? 1 : state.currentDay + 1,
-        phase: nextPhase
+        phase: PHASES.MORNING_COLLECTION,
+        tradingWaveIndex: 0,
+        tradingLog: []
       }, `Placed order for £${order.total.toFixed(2)}. Collection scheduled for Day ${order.dayArrives}.`);
     }
 
@@ -110,7 +112,20 @@ export function reducer(state, action) {
     case 'RETURN_DISPLAY_TO_VAN':
       return log({ ...state, stockBatches: resetDisplayToVan(state.stockBatches) }, 'Returned display stock to van.');
 
-    case 'END_TRADING_DAY':
+    case 'RUN_CUSTOMER_WAVE': {
+      if (state.phase !== PHASES.TRADING) return log(state, 'Customer wave blocked: not in trading phase.');
+      const result = simulateCustomerWave(state);
+      return log({
+        ...state,
+        ...result.stateChanges,
+        tradingLog: [result.report, ...state.tradingLog].slice(0, 12)
+      }, `Simulated ${result.report.wave} wave: £${result.report.revenue.toFixed(2)} revenue.`);
+    }
+
+    case 'END_TRADING_DAY': {
+      const revenue = state.tradingLog.reduce((sum, wave) => sum + (wave.revenue ?? 0), 0);
+      const salesCount = state.tradingLog.reduce((sum, wave) => sum + (wave.sales?.length ?? 0), 0);
+      const missedCount = state.tradingLog.reduce((sum, wave) => sum + (wave.missedDemand?.length ?? 0), 0);
       return log({
         ...state,
         phase: PHASES.DAILY_SUMMARY,
@@ -120,10 +135,15 @@ export function reducer(state, action) {
             day: state.currentDay,
             cash: state.cash,
             locationId: state.selectedLocationId,
-            note: 'Placeholder trading report. Customer simulation comes next.'
+            revenue,
+            salesCount,
+            missedCount,
+            tradingLog: state.tradingLog,
+            note: `Passive wave report: ${salesCount} sales, ${missedCount} missed demand notes, £${revenue.toFixed(2)} revenue.`
           }
         ]
-      }, 'Ended trading day with placeholder report.');
+      }, 'Ended trading day with passive wave report.');
+    }
 
     case 'START_EVENING_ORDER':
       return log({ ...state, phase: PHASES.EVENING_ORDER }, 'Opened evening wholesaler order.');
@@ -140,7 +160,9 @@ export function reducer(state, action) {
         currentDay: Math.min(7, state.currentDay + 1),
         phase: PHASES.MORNING_COLLECTION,
         selectedLocationId: null,
-        selectedWeather: weekDayByNumber[Math.min(7, state.currentDay + 1)]?.weather ?? null
+        selectedWeather: weekDayByNumber[Math.min(7, state.currentDay + 1)]?.weather ?? null,
+        tradingWaveIndex: 0,
+        tradingLog: []
       }, 'Debug jumped to next day.');
 
     case 'RESET_PROTOTYPE':
