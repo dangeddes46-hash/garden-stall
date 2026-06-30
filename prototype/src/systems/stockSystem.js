@@ -1,18 +1,21 @@
-import { FEATURE_POT_TRAY_FORMATS, VAN_LOAD_LIMITS } from '../data/vanCapacity.js';
-import { plantById } from '../data/plants.js';
+import { VAN_LOAD_LIMITS } from '../data/vanCapacity.js';
 
 export function getStockByLocation(stockBatches, location) {
   return stockBatches.filter((batch) => batch.location === location && batch.quantity > 0);
 }
 
 export function getBatchVanLoad(batch) {
-  const plant = plantById[batch.plantId];
-  const isFeaturePotGroup = FEATURE_POT_TRAY_FORMATS.includes(plant?.trayFormat);
-
-  if (isFeaturePotGroup) {
+  if (batch.loadType === 'feature-pots') {
     return {
       traySlots: 0,
       featurePots: batch.quantity
+    };
+  }
+
+  if (batch.loadType === 'sundry') {
+    return {
+      traySlots: 1,
+      featurePots: 0
     };
   }
 
@@ -63,6 +66,19 @@ export function resetDisplayToVan(stockBatches) {
       ...batch,
       location: 'van',
       zoneId: null
+    };
+  });
+}
+
+export function applySaleToBatch(stockBatches, batchId, quantitySold) {
+  return stockBatches.map((batch) => {
+    if (batch.id !== batchId) return batch;
+    const saleQuantity = Math.min(quantitySold, batch.quantity);
+    return {
+      ...batch,
+      quantity: batch.quantity - saleQuantity,
+      quantitySold: batch.quantitySold + saleQuantity,
+      location: batch.quantity - saleQuantity <= 0 ? 'sold' : batch.location
     };
   });
 }
