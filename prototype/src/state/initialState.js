@@ -1,7 +1,7 @@
 import { PHASES, STARTING_CASH } from '../data/constants.js';
 
 export const initialState = {
-  prototypeVersion: '0.1-special-requests',
+  prototypeVersion: '0.1-condition-pressure',
   phase: PHASES.DAY0_ORDER,
   currentDay: 0,
   cash: STARTING_CASH,
@@ -19,5 +19,6 @@ export const initialState = {
   tradingLog: [],
   activeRequest: null,
   requestLog: [],
+  conditionLog: [],
   debugLog: ['Prototype started at Day 0 evening order.']
 };
