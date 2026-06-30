@@ -18,7 +18,9 @@ Current implemented slice:
 - reduced stock returns only to display or van during the trading day
 - passive customer wave simulation
 - special request generation and scored recommendations
-- trading log with sales, revenue, missed demand, request outcomes, and recommendation reasons
+- visible-stock watering action
+- end-of-day condition pressure based on display exposure, moisture, plant risk, and weather stress
+- trading log with sales, revenue, missed demand, request outcomes, recommendation reasons, and condition changes
 - debug reset, phase jump, cash tools, next-day jump, JSON export, and Markdown report export
 
 ## Run locally
@@ -41,7 +43,6 @@ This is not yet the full Prototype 0.1 gameplay loop.
 
 Still placeholder:
 
-- condition degradation
 - full zone-specific display placement
 - detailed weekly summary
 - full notebook unlocking
