@@ -6,7 +6,7 @@ Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`v0.1-condition-pressure`
+`v0.1-tray-atomicity-fix`
 
 ## Current Source of Truth
 
@@ -52,13 +52,16 @@ Implemented:
 - static data modules for plants, locations, supplier listings, tray profiles, customer archetypes, customer seeds, special requests, notebook discoveries, and first-week script
 - reducer-based phase loop skeleton
 - Day 0 County Plant Wholesale order flow
-- Day 1 morning collection flow that converts pending orders into home stock batches
+- Day 1 morning collection flow that converts pending orders into home stock tray batches
 - physical tray-grid batch profiles: 2x3, 4x6, 3x5, feature pot groups, and sundry packs
+- collection now creates one stock batch per physical tray, not one merged batch per species/order line
 - van capacity model: 6 tray spaces plus 6 loose/feature potted plants
+- loading and display movement now operate one tray batch at a time
 - location, van loadout, route, display, trading, and daily summary screens
-- display slot capacity enforcement
+- display slot capacity enforcement per tray batch
 - simple display score and display rating
 - reduced stock can now return only to display or van during trading-day setup
+- unsold van/display/reduced stock is automatically packed back home at end of day
 - passive customer wave simulation with sales, revenue, missed demand, and trading log
 - special request generation and scored recommendations against visible stock
 - request log with outcome, revenue, reason, warning context, and queued notebook reward notes
@@ -77,17 +80,18 @@ Still placeholder:
 
 ## Current Priority
 
-Run the `/prototype/` app locally after pulling latest changes, confirm watering and condition changes behave sensibly, then implement full zone-specific display placement as the next narrow target.
+Run the `/prototype/` app locally after pulling latest changes, confirm physical tray atomicity, unsold stock packdown, and tomato drying behave sensibly, then implement full zone-specific display placement as the next narrow target.
 
 ## Recommended Next Actions
 
 1. Run `git pull`, then `cd prototype && npm run dev` locally.
-2. Reset the prototype from the debug panel.
-3. Put fragile/thirsty stock on display, skip watering, and end the trading day.
-4. Confirm moisture/condition changes appear in the daily summary.
-5. Repeat with watering before ending the day and compare condition results.
-6. Tune condition pressure if changes feel too harsh or too invisible.
-7. Implement full zone-specific display placement next.
+2. Reset the prototype from the debug panel so old merged stock batches do not remain in memory.
+3. Order multiple tomato trays and collect them.
+4. Confirm each tomato tray appears as its own home stock batch.
+5. Load/display trays one at a time and confirm each tray consumes one van/display slot.
+6. End the day and confirm unsold tray batches appear back in home stock.
+7. Leave tomatoes displayed without watering and confirm they dry more visibly than before.
+8. Implement full zone-specific display placement next.
 
 ## Known Risks
 
