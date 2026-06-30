@@ -1,5 +1,36 @@
 # Changelog — The Garden Stall
 
+## 2026-06-29 — Tray batches, display score, and passive waves
+
+Advanced the Prototype 0.1 implementation from the first shell into the next narrow gameplay pass.
+
+Added:
+
+- `prototype/src/data/trayProfiles.js`
+- `prototype/src/systems/displaySystem.js`
+- `prototype/src/systems/customerSystem.js`
+
+Changed:
+
+- Supplier listings now use physical tray/grid batch profiles rather than arbitrary prototype quantities.
+- Batch profiles include 2x3 trays, 4x6 trays, 3x5 trays, feature pot groups, and sundry packs.
+- Most starter bedding/grow-your-own lines now use 4x6 trays where appropriate.
+- Stock batches now carry batch label, batch type, and load type through from wholesaler to collection.
+- Van loadout continues to use tray spaces plus feature potted capacity.
+- Display setup now has total display slot capacity enforcement.
+- Display setup now produces a simple display score and rating.
+- Trading now has passive customer waves with sales, revenue, missed demand, and a visible trading log.
+- Daily summary now reports passive wave sales, missed demand, and revenue.
+
+Still not added:
+
+- special request scoring
+- condition degradation
+- full zone-specific placement
+- notebook unlock behaviour
+- staff implementation
+- final art dependency
+
 ## 2026-06-29 — Van capacity correction
 
 Adjusted the prototype van loadout model after first local smoke test feedback.
