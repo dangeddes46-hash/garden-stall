@@ -190,6 +190,30 @@ function StockList({ title, batches, emptyText, actionLabel, actionType, dispatc
   );
 }
 
+function ReducedStockList({ batches, emptyText, dispatch }) {
+  return (
+    <div>
+      <h3>Reduced area</h3>
+      {batches.length === 0 ? <p className="muted">{emptyText}</p> : (
+        <div className="stack">
+          {batches.map((batch) => (
+            <div key={batch.id} className="row-card">
+              <div>
+                <strong>{batch.plantName}</strong>
+                <p className="fine-print">{batch.batchLabel ?? 'batch'} · {batch.quantity} left · reduced trading stock</p>
+              </div>
+              <div className="row-actions wrap-actions">
+                <button onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_DISPLAY', batchId: batch.id })}>Return display</button>
+                <button className="secondary" onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_VAN', batchId: batch.id })}>Return van</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function VanLoadoutScreen({ state, dispatch }) {
   const homeStock = getStockByLocation(state.stockBatches, 'home');
   const vanStock = getStockByLocation(state.stockBatches, 'van');
@@ -265,7 +289,7 @@ function DisplaySetupScreen({ state, dispatch }) {
         </div>
         {displaySummary.notes.map((note) => <p key={note} className="fine-print">• {note}</p>)}
         <StockList title="Display" batches={displayStock} emptyText="Nothing displayed yet." actionLabel="Reduce" actionType="MOVE_TO_REDUCED" dispatch={dispatch} />
-        <StockList title="Reduced area" batches={reducedStock} emptyText="No reduced stock." actionLabel="Return home" actionType="UNLOAD_TO_HOME" dispatch={dispatch} />
+        <ReducedStockList batches={reducedStock} emptyText="No reduced stock." dispatch={dispatch} />
         <div className="button-row">
           <button onClick={() => dispatch({ type: 'ADVANCE_PHASE' })}>Open trading</button>
           <button className="secondary" onClick={() => dispatch({ type: 'RETURN_DISPLAY_TO_VAN' })}>Return display to van</button>
@@ -275,24 +299,76 @@ function DisplaySetupScreen({ state, dispatch }) {
   );
 }
 
+function SpecialRequestPanel({ state, dispatch }) {
+  const visibleStock = state.stockBatches.filter((batch) => ['display', 'reduced-area'].includes(batch.location) && batch.quantity > 0);
+  const request = state.activeRequest;
+  return (
+    <Card>
+      <p className="eyebrow">Special Request</p>
+      {!request ? (
+        <>
+          <h2>No active request</h2>
+          <p className="muted">Generate one customer request, then recommend one visible plant or item.</p>
+          <button onClick={() => dispatch({ type: 'GENERATE_SPECIAL_REQUEST' })}>Generate request</button>
+        </>
+      ) : (
+        <>
+          <h2>{request.displayName}</h2>
+          <p>“{request.customerLine}”</p>
+          {request.requiredWarnings?.length > 0 && <p className="fine-print">Warning context: {request.requiredWarnings[0]}</p>}
+          {visibleStock.length === 0 ? <p className="muted">No visible stock is available to recommend.</p> : (
+            <div className="stack">
+              {visibleStock.map((batch) => (
+                <div className="row-card" key={batch.id}>
+                  <div>
+                    <strong>{batch.plantName}</strong>
+                    <p className="fine-print">{batch.location === 'reduced-area' ? 'Reduced' : 'Display'} · {batch.quantity} left · {money(batch.unitRetailPrice)} each</p>
+                  </div>
+                  <button onClick={() => dispatch({ type: 'ANSWER_SPECIAL_REQUEST', batchId: batch.id })}>Recommend</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <button className="secondary" onClick={() => dispatch({ type: 'CANCEL_SPECIAL_REQUEST' })}>Dismiss request</button>
+        </>
+      )}
+      {state.requestLog.length > 0 && (
+        <div className="stack request-log">
+          <h3>Request log</h3>
+          {state.requestLog.map((entry, index) => (
+            <article key={`${entry.requestId}-${index}`} className="row-card column-card">
+              <strong>{entry.requestName}: {entry.outcome} · {money(entry.revenue)}</strong>
+              <p className="fine-print">Recommended {entry.plantName}. {entry.reason}</p>
+              {entry.notebookRewards?.length > 0 && <p className="fine-print">Notebook reward queued: {entry.notebookRewards.join(', ')}</p>}
+            </article>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function TradingScreen({ state, dispatch }) {
   const displaySummary = getDisplayZoneSummary(state.stockBatches);
   return (
     <div className="screen-grid">
-      <Card>
-        <p className="eyebrow">Trading Day</p>
-        <h2>Passive customer waves</h2>
-        <p>Each wave generates a few location-weighted customers. They buy visible stock if tags, display, condition, and price feel good enough.</p>
-        <div className="totals">
-          <div><span>Next wave</span><strong>{(state.tradingWaveIndex ?? 0) + 1}</strong></div>
-          <div><span>Display</span><strong>{displaySummary.rating}</strong></div>
-          <div><span>Visible batches</span><strong>{displaySummary.usedSlots}</strong></div>
-        </div>
-        <div className="button-row">
-          <button disabled={(state.tradingWaveIndex ?? 0) >= 4} onClick={() => dispatch({ type: 'RUN_CUSTOMER_WAVE' })}>Simulate customer wave</button>
-          <button className="secondary" onClick={() => dispatch({ type: 'END_TRADING_DAY' })}>End trading day</button>
-        </div>
-      </Card>
+      <div className="stack">
+        <Card>
+          <p className="eyebrow">Trading Day</p>
+          <h2>Passive customer waves</h2>
+          <p>Each wave generates a few location-weighted customers. They buy visible stock if tags, display, condition, and price feel good enough.</p>
+          <div className="totals">
+            <div><span>Next wave</span><strong>{(state.tradingWaveIndex ?? 0) + 1}</strong></div>
+            <div><span>Display</span><strong>{displaySummary.rating}</strong></div>
+            <div><span>Visible batches</span><strong>{displaySummary.usedSlots}</strong></div>
+          </div>
+          <div className="button-row">
+            <button disabled={(state.tradingWaveIndex ?? 0) >= 4} onClick={() => dispatch({ type: 'RUN_CUSTOMER_WAVE' })}>Simulate customer wave</button>
+            <button className="secondary" onClick={() => dispatch({ type: 'END_TRADING_DAY' })}>End trading day</button>
+          </div>
+        </Card>
+        <SpecialRequestPanel state={state} dispatch={dispatch} />
+      </div>
       <Card>
         <h2>Trading Log</h2>
         {state.tradingLog.length === 0 ? <p className="muted">No waves simulated yet.</p> : (
@@ -323,11 +399,11 @@ function DailySummary({ state, dispatch }) {
       {latest && (
         <div className="totals">
           <div><span>Revenue</span><strong>{money(latest.revenue)}</strong></div>
-          <div><span>Sales</span><strong>{latest.salesCount}</strong></div>
-          <div><span>Missed demand</span><strong>{latest.missedCount}</strong></div>
+          <div><span>Passive sales</span><strong>{latest.salesCount}</strong></div>
+          <div><span>Requests</span><strong>{latest.requestCount ?? 0}</strong></div>
         </div>
       )}
-      <p className="muted">Special request scoring, condition decay, and notebook unlocks remain placeholders.</p>
+      <p className="muted">Condition decay, full notebook unlocks, and weekly summary remain placeholders.</p>
       <button onClick={() => dispatch({ type: 'START_EVENING_ORDER' })}>Open evening order</button>
     </Card>
   );
