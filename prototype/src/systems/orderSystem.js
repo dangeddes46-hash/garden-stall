@@ -44,6 +44,9 @@ export function createStockBatchesFromOrder(order) {
       location: 'home',
       zoneId: null,
       reduced: false,
+      batchType: item.batchType,
+      batchLabel: item.batchLabel,
+      loadType: item.loadType,
       notes: [item.supplierNote].filter(Boolean)
     };
   });
