@@ -15,6 +15,7 @@ export function createDebugExport(state) {
     activeRequest: state.activeRequest,
     tradingLog: state.tradingLog,
     requestLog: state.requestLog,
+    conditionLog: state.conditionLog,
     dailyReports: state.dailyReports,
     notebook: state.notebook,
     debugLog: state.debugLog
@@ -24,7 +25,7 @@ export function createDebugExport(state) {
 export function createMarkdownReport(state) {
   const locationName = state.selectedLocationId ? locationById[state.selectedLocationId]?.displayName : 'No location selected';
   const stockLines = state.stockBatches.length
-    ? state.stockBatches.map((batch) => `- ${batch.plantName}: ${batch.quantity} units, ${batch.location}, ${batch.condition}`).join('\n')
+    ? state.stockBatches.map((batch) => `- ${batch.plantName}: ${batch.quantity} units, ${batch.location}, ${batch.condition}, ${batch.moisture}`).join('\n')
     : '- No stock batches yet';
 
   const orderLines = state.pendingOrders.length
@@ -34,6 +35,10 @@ export function createMarkdownReport(state) {
   const requestLines = state.requestLog?.length
     ? state.requestLog.map((request) => `- ${request.requestName}: ${request.outcome}, ${request.plantName}, £${request.revenue.toFixed(2)} — ${request.reason}`).join('\n')
     : '- No special requests resolved yet';
+
+  const conditionLines = state.conditionLog?.length
+    ? state.conditionLog.map((event) => `- ${event.plantName}: ${event.fromCondition} → ${event.toCondition}; ${event.fromMoisture} → ${event.toMoisture}; ${event.reason}`).join('\n')
+    : '- No condition changes recorded yet';
 
   return `# Garden Stall Prototype 0.1 Debug Report\n\n` +
     `Generated: ${new Date().toISOString()}\n\n` +
@@ -45,5 +50,6 @@ export function createMarkdownReport(state) {
     `## Pending Orders\n\n${orderLines}\n\n` +
     `## Stock Batches\n\n${stockLines}\n\n` +
     `## Special Requests\n\n${requestLines}\n\n` +
+    `## Condition Changes\n\n${conditionLines}\n\n` +
     `## Debug Log\n\n${state.debugLog.map((entry) => `- ${entry}`).join('\n') || '- No debug actions yet'}\n`;
 }
