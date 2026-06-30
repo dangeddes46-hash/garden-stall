@@ -6,7 +6,7 @@ Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`v0.1-passive-waves`
+`v0.1-special-requests`
 
 ## Current Source of Truth
 
@@ -58,39 +58,41 @@ Implemented:
 - location, van loadout, route, display, trading, and daily summary screens
 - display slot capacity enforcement
 - simple display score and display rating
+- reduced stock can now return only to display or van during trading-day setup
 - passive customer wave simulation with sales, revenue, missed demand, and trading log
+- special request generation and scored recommendations against visible stock
+- request log with outcome, revenue, reason, warning context, and queued notebook reward notes
 - debug/admin panel with cash tools, phase jump, next-day jump, reset, JSON export, and Markdown report export
 
 Still placeholder:
 
-- special request scoring
 - condition degradation
 - full zone-specific display placement
 - detailed weekly summary
-- notebook unlock behaviour
+- full notebook unlock behaviour
 - staff pressure metrics
 - final artwork and visual polish
 
 ## Current Priority
 
-Run the `/prototype/` app locally after pulling latest changes, confirm batch sizes and passive customer waves behave sensibly, then implement special request scoring as the next narrow target.
+Run the `/prototype/` app locally after pulling latest changes, confirm reduced stock return controls and special request scoring behave sensibly, then implement condition degradation as the next narrow target.
 
 ## Recommended Next Actions
 
 1. Run `git pull`, then `cd prototype && npm run dev` locally.
 2. Reset the prototype from the debug panel.
-3. Confirm supplier batches show physical tray sizes such as 4x6 trays.
-4. Confirm van loadout uses tray spaces rather than individual plant units.
-5. Confirm display setup produces a visible display rating.
-6. Simulate customer waves and review sales/missed-demand logs.
-7. Tune batch wholesale costs and customer score thresholds if the first wave feels too generous or too harsh.
-8. Implement special request scoring next.
+3. Confirm reduced stock can return to display or van, but not home.
+4. Simulate passive waves and generate special requests during trading.
+5. Recommend visible stock to special request customers and review outcome/reason text.
+6. Tune special request outcome thresholds or request data if outcomes feel too generous or too harsh.
+7. Implement condition degradation next.
 
 ## Known Risks
 
 - This latest code pass has not yet been run in a local Vite environment by the Builder window.
 - Batch wholesale costs are rough estimates after moving to larger physical tray quantities.
 - Passive customer scoring is deliberately simple and may need quick tuning.
+- Special request scoring currently uses known good/acceptable/poor/bad plant lists, not deeper explanation logic.
 - Display placement is still zone-light: it enforces total display slots but does not yet assign stock to individual front table/floor/reduced zones.
 - Real-time trading should remain a testable wave/timer system first, with pauseable menus and strong debug controls.
 - Daily and weekly summaries must explain outcomes clearly or the loop will feel opaque.
