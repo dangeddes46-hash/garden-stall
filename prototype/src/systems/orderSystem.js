@@ -25,15 +25,44 @@ export function createPendingOrder({ dayPlaced, cart }) {
   };
 }
 
-function createPlantHealthProfiles({ item, plant, trayId }) {
+function initialMoistureForPlant(plant) {
+  return plant.moistureProfile === 'none' ? 'watered' : 'damp';
+}
+
+function createPlantHealthProfiles({ item, plant, batchId, quantity }) {
   const initialCondition = item.condition ?? 'excellent';
-  const initialMoisture = plant.moistureProfile === 'none' ? 'watered' : 'damp';
-  return Array.from({ length: item.quantity }, (_, plantIndex) => ({
-    id: `${trayId}-plant-${plantIndex}`,
+  const initialMoisture = initialMoistureForPlant(plant);
+  return Array.from({ length: quantity }, (_, plantIndex) => ({
+    id: `${batchId}-plant-${plantIndex}`,
     condition: initialCondition,
     moisture: initialMoisture,
     sold: false
   }));
+}
+
+function createStockBatch({ order, item, plant, itemIndex, batchIndex, quantity, batchLabel, batchType, loadType }) {
+  const batchId = `${order.id}-batch-${itemIndex}-${batchIndex}-${item.plantId}`;
+  return {
+    id: batchId,
+    sourceOrderId: order.id,
+    plantId: item.plantId,
+    plantName: plant.displayName,
+    quantity,
+    quantitySold: 0,
+    unitHealth: createPlantHealthProfiles({ item, plant, batchId, quantity }),
+    unitHealthModel: 'per-plant-average',
+    unitRetailPrice: item.suggestedRetail,
+    priceBand: 'normal',
+    condition: item.condition ?? 'excellent',
+    moisture: initialMoistureForPlant(plant),
+    location: 'home',
+    zoneId: null,
+    reduced: false,
+    batchType,
+    batchLabel,
+    loadType,
+    notes: [item.supplierNote].filter(Boolean)
+  };
 }
 
 export function createStockBatchesFromOrder(order) {
@@ -41,32 +70,30 @@ export function createStockBatchesFromOrder(order) {
     const plant = plantById[item.plantId];
     if (!plant) return [];
 
-    return Array.from({ length: item.count }, (_, trayIndex) => {
-      const trayId = `${order.id}-tray-${itemIndex}-${trayIndex}-${item.plantId}`;
-      const unitHealth = createPlantHealthProfiles({ item, plant, trayId });
-      return {
-        id: trayId,
-        sourceOrderId: order.id,
-        plantId: item.plantId,
-        plantName: plant.displayName,
-        quantity: item.quantity,
-        quantitySold: 0,
-        unitHealth,
-        unitHealthModel: 'per-plant-average',
-        unitRetailPrice: item.suggestedRetail,
-        priceBand: 'normal',
-        condition: item.condition ?? 'excellent',
-        moisture: plant.moistureProfile === 'none' ? 'watered' : 'damp',
-        location: 'home',
-        zoneId: null,
-        reduced: false,
-        batchType: item.batchType,
-        batchLabel: item.batchLabel,
-        loadType: item.loadType,
-        trayNumber: trayIndex + 1,
-        trayCountFromOrderLine: item.count,
-        notes: [item.supplierNote].filter(Boolean)
-      };
-    });
+    if (item.loadType === 'feature-pots') {
+      return Array.from({ length: item.count * item.quantity }, (_, potIndex) => createStockBatch({
+        order,
+        item,
+        plant,
+        itemIndex,
+        batchIndex: potIndex,
+        quantity: 1,
+        batchLabel: 'single feature pot',
+        batchType: 'feature-pot',
+        loadType: 'feature-pots'
+      }));
+    }
+
+    return Array.from({ length: item.count }, (_, trayIndex) => createStockBatch({
+      order,
+      item,
+      plant,
+      itemIndex,
+      batchIndex: trayIndex,
+      quantity: item.quantity,
+      batchLabel: item.batchLabel,
+      batchType: item.batchType,
+      loadType: item.loadType
+    }));
   });
 }
