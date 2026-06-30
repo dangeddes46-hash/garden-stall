@@ -2,11 +2,11 @@
 
 ## Phase
 
-Prototype 0.1 implementation has begun from B-001.
+Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`v0.1-first-code-pass`
+`v0.1-passive-waves`
 
 ## Current Source of Truth
 
@@ -44,47 +44,55 @@ Documents 1–17 define:
 
 ## Current Prototype State
 
-The first B-001 implementation target has been started in `/prototype/`.
+The Prototype 0.1 browser app lives in `/prototype/`.
 
 Implemented:
 
 - Vite + React + JavaScript app shell
-- static data modules for plants, locations, supplier listings, customer archetypes, customer seeds, special requests, notebook discoveries, and first-week script
+- static data modules for plants, locations, supplier listings, tray profiles, customer archetypes, customer seeds, special requests, notebook discoveries, and first-week script
 - reducer-based phase loop skeleton
 - Day 0 County Plant Wholesale order flow
 - Day 1 morning collection flow that converts pending orders into home stock batches
-- basic location, van loadout, route, display, trading, and daily summary placeholder screens
+- physical tray-grid batch profiles: 2x3, 4x6, 3x5, feature pot groups, and sundry packs
+- van capacity model: 6 tray spaces plus 6 loose/feature potted plants
+- location, van loadout, route, display, trading, and daily summary screens
+- display slot capacity enforcement
+- simple display score and display rating
+- passive customer wave simulation with sales, revenue, missed demand, and trading log
 - debug/admin panel with cash tools, phase jump, next-day jump, reset, JSON export, and Markdown report export
 
 Still placeholder:
 
-- passive customer simulation
 - special request scoring
-- display scoring and proper zone capacity enforcement
 - condition degradation
-- detailed daily and weekly summaries
+- full zone-specific display placement
+- detailed weekly summary
 - notebook unlock behaviour
 - staff pressure metrics
 - final artwork and visual polish
 
 ## Current Priority
 
-Run the `/prototype/` app locally, confirm the first pass loads, and then implement the next narrow target: display zone capacity/scoring plus passive customer wave simulation.
+Run the `/prototype/` app locally after pulling latest changes, confirm batch sizes and passive customer waves behave sensibly, then implement special request scoring as the next narrow target.
 
 ## Recommended Next Actions
 
-1. Run `cd prototype && npm install && npm run dev` locally.
-2. Confirm Day 0 order → Day 1 collection → weather → location → van loadout → route → display → trading placeholder → daily summary works.
-3. Fix any local runtime issues found by Vite.
-4. Implement display zone capacity and readable display score.
-5. Implement passive customer wave simulation before special request scoring.
+1. Run `git pull`, then `cd prototype && npm run dev` locally.
+2. Reset the prototype from the debug panel.
+3. Confirm supplier batches show physical tray sizes such as 4x6 trays.
+4. Confirm van loadout uses tray spaces rather than individual plant units.
+5. Confirm display setup produces a visible display rating.
+6. Simulate customer waves and review sales/missed-demand logs.
+7. Tune batch wholesale costs and customer score thresholds if the first wave feels too generous or too harsh.
+8. Implement special request scoring next.
 
 ## Known Risks
 
-- This code pass has not yet been run in a local Vite environment by the Builder window.
-- Scope is large for a first prototype.
-- Real-time trading should be implemented as a testable wave/timer system first, with pauseable menus and strong debug controls.
-- Display must remain tray/slot based and not become pixel-placement.
+- This latest code pass has not yet been run in a local Vite environment by the Builder window.
+- Batch wholesale costs are rough estimates after moving to larger physical tray quantities.
+- Passive customer scoring is deliberately simple and may need quick tuning.
+- Display placement is still zone-light: it enforces total display slots but does not yet assign stock to individual front table/floor/reduced zones.
+- Real-time trading should remain a testable wave/timer system first, with pauseable menus and strong debug controls.
 - Daily and weekly summaries must explain outcomes clearly or the loop will feel opaque.
 - Art direction must not delay systems testing.
 - Repository must remain source of truth to avoid chat-memory drift.
