@@ -5,7 +5,7 @@ import { canLoadBatchToVan, moveStockBatch, packUnsoldTradingStockHome, resetDis
 import { simulateCustomerWave } from '../systems/customerSystem.js';
 import { canPlaceBatchOnDisplay } from '../systems/displaySystem.js';
 import { pickSpecialRequest, scoreSpecialRequest } from '../systems/requestSystem.js';
-import { applyEndOfDayConditionPressure, waterVisibleStock } from '../systems/conditionSystem.js';
+import { applyEndOfDayConditionPressure, applyTradingWaveConditionPressure, waterVisibleStock } from '../systems/conditionSystem.js';
 import { initialState } from './initialState.js';
 
 function log(state, message) {
@@ -135,11 +135,15 @@ export function reducer(state, action) {
     case 'RUN_CUSTOMER_WAVE': {
       if (state.phase !== PHASES.TRADING) return log(state, 'Customer wave blocked: not in trading phase.');
       const result = simulateCustomerWave(state);
+      const waveNumber = (state.tradingWaveIndex ?? 0) + 1;
+      const conditionResult = applyTradingWaveConditionPressure(result.stateChanges.stockBatches ?? state.stockBatches, state.selectedWeather, waveNumber);
       return log({
         ...state,
         ...result.stateChanges,
-        tradingLog: [result.report, ...state.tradingLog].slice(0, 12)
-      }, `Simulated ${result.report.wave} wave: £${result.report.revenue.toFixed(2)} revenue.`);
+        stockBatches: conditionResult.stockBatches,
+        conditionLog: [...conditionResult.conditionEvents, ...(state.conditionLog ?? [])].slice(0, 24),
+        tradingLog: [{ ...result.report, conditionEvents: conditionResult.conditionEvents }, ...state.tradingLog].slice(0, 12)
+      }, `Simulated ${result.report.wave} wave: £${result.report.revenue.toFixed(2)} revenue, ${conditionResult.conditionEvents.length} condition changes.`);
     }
 
     case 'GENERATE_SPECIAL_REQUEST': {
@@ -170,11 +174,12 @@ export function reducer(state, action) {
       const salesCount = state.tradingLog.reduce((sum, wave) => sum + (wave.sales?.length ?? 0), 0);
       const missedCount = state.tradingLog.reduce((sum, wave) => sum + (wave.missedDemand?.length ?? 0), 0);
       const conditionResult = applyEndOfDayConditionPressure(state.stockBatches, state.selectedWeather);
+      const conditionEvents = [...conditionResult.conditionEvents, ...(state.conditionLog ?? [])];
       const packdown = packUnsoldTradingStockHome(conditionResult.stockBatches);
       return log({
         ...state,
         stockBatches: packdown.stockBatches,
-        conditionLog: conditionResult.conditionEvents,
+        conditionLog: conditionEvents,
         activeRequest: null,
         phase: PHASES.DAILY_SUMMARY,
         dailyReports: [
@@ -192,8 +197,8 @@ export function reducer(state, action) {
             packedCount: packdown.packedCount,
             tradingLog: state.tradingLog,
             requestLog: state.requestLog,
-            conditionEvents: conditionResult.conditionEvents,
-            note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionResult.conditionEvents.length} condition changes, ${packdown.packedCount} unsold tray batches packed home.`
+            conditionEvents,
+            note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionEvents.length} condition changes, ${packdown.packedCount} unsold tray batches packed home.`
           }
         ]
       }, `Ended trading day: ${packdown.packedCount} unsold tray batches packed home.`);
