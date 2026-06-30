@@ -7,7 +7,7 @@ import { locations, locationById } from './data/locations.js';
 import { weekDayByNumber } from './data/weekScript.js';
 import { calculateCart } from './systems/orderSystem.js';
 import { getStockByLocation, getVanLoadSummary } from './systems/stockSystem.js';
-import { groupStockBatches } from './systems/stockGroupingSystem.js';
+import { groupStockByPlant } from './systems/stockGroupingSystem.js';
 import { getDisplayZoneSummary } from './systems/displaySystem.js';
 import { createDebugExport, createMarkdownReport } from './systems/reportSystem.js';
 import { initialState } from './state/initialState.js';
@@ -26,7 +26,7 @@ function HeaderStatus({ state }) {
     <header className="top-bar">
       <div>
         <p className="eyebrow">The Garden Stall</p>
-        <h1>Prototype 0.1</h1>
+        <h1>Prototype 0.1 <span className="pill">{state.prototypeVersion}</span></h1>
       </div>
       <div className="status-grid">
         <div><span>Day</span><strong>{state.currentDay}</strong></div>
@@ -170,20 +170,61 @@ function LocationScreen({ state, dispatch }) {
   );
 }
 
-function StockList({ title, batches, emptyText, actionLabel, actionType, dispatch }) {
-  const groups = groupStockBatches(batches);
+function TrayRow({ batch, actionLabel, actionType, allowWater = false, dispatch, extraActions = null }) {
+  const plantCount = batch.unitHealth?.filter((unit) => !unit.sold).length ?? batch.quantity;
+  return (
+    <div className="row-card">
+      <div>
+        <strong>{batch.batchLabel ?? 'tray'} · {batch.quantity} left</strong>
+        <p className="fine-print">Average tray health: {batch.condition} · {batch.moisture} · {batch.priceBand}</p>
+        <p className="fine-print">Plant records: {plantCount} active · {batch.quantitySold ?? 0} sold</p>
+      </div>
+      <div className="row-actions wrap-actions">
+        {allowWater && <button className="secondary" onClick={() => dispatch({ type: 'WATER_STOCK_BATCH', batchId: batch.id })}>Water tray</button>}
+        {actionType && <button onClick={() => dispatch({ type: actionType, batchId: batch.id })}>{actionLabel}</button>}
+        {extraActions}
+      </div>
+    </div>
+  );
+}
+
+function ExpandableStockList({ title, batches, emptyText, actionLabel, actionType, allowWater = false, dispatch, renderExtraActions }) {
+  const groups = groupStockByPlant(batches);
+  const [openOverrides, setOpenOverrides] = useState({});
+
+  function isOpen(group) {
+    return openOverrides[group.key] ?? group.defaultOpen;
+  }
+
+  function toggle(group) {
+    setOpenOverrides((current) => ({ ...current, [group.key]: !isOpen(group) }));
+  }
+
   return (
     <div>
       <h3>{title}</h3>
       {groups.length === 0 ? <p className="muted">{emptyText}</p> : (
         <div className="stack">
           {groups.map((group) => (
-            <div key={group.key} className="row-card">
-              <div>
-                <strong>{group.plantName}</strong>
-                <p className="fine-print">{group.trayCount} × {group.batchLabel ?? 'tray'} · {group.totalUnits} units total · {group.condition} · {group.moisture} · {group.priceBand}</p>
-              </div>
-              {actionType && <button onClick={() => dispatch({ type: actionType, batchId: group.representativeBatchId })}>{actionLabel}</button>}
+            <div key={group.key} className="column-card row-card">
+              <button className="link-button" onClick={() => toggle(group)}>
+                {isOpen(group) ? '▾' : '▸'} {group.plantName} — {group.trayCount} trays, {group.totalUnits} plants
+              </button>
+              {isOpen(group) && (
+                <div className="stack nested-stack">
+                  {group.batches.map((batch) => (
+                    <TrayRow
+                      key={batch.id}
+                      batch={batch}
+                      actionLabel={actionLabel}
+                      actionType={actionType}
+                      allowWater={allowWater}
+                      dispatch={dispatch}
+                      extraActions={renderExtraActions ? renderExtraActions(batch) : null}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -193,27 +234,20 @@ function StockList({ title, batches, emptyText, actionLabel, actionType, dispatc
 }
 
 function ReducedStockList({ batches, emptyText, dispatch }) {
-  const groups = groupStockBatches(batches);
   return (
-    <div>
-      <h3>Reduced area</h3>
-      {groups.length === 0 ? <p className="muted">{emptyText}</p> : (
-        <div className="stack">
-          {groups.map((group) => (
-            <div key={group.key} className="row-card">
-              <div>
-                <strong>{group.plantName}</strong>
-                <p className="fine-print">{group.trayCount} × {group.batchLabel ?? 'tray'} · {group.totalUnits} units total · {group.condition} · {group.moisture} · reduced trading stock</p>
-              </div>
-              <div className="row-actions wrap-actions">
-                <button onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_DISPLAY', batchId: group.representativeBatchId })}>Return one display</button>
-                <button className="secondary" onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_VAN', batchId: group.representativeBatchId })}>Return one van</button>
-              </div>
-            </div>
-          ))}
-        </div>
+    <ExpandableStockList
+      title="Reduced area"
+      batches={batches}
+      emptyText={emptyText}
+      allowWater
+      dispatch={dispatch}
+      renderExtraActions={(batch) => (
+        <>
+          <button onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_DISPLAY', batchId: batch.id })}>Return display</button>
+          <button className="secondary" onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_VAN', batchId: batch.id })}>Return van</button>
+        </>
       )}
-    </div>
+    />
   );
 }
 
@@ -227,7 +261,7 @@ function VanLoadoutScreen({ state, dispatch }) {
         <p className="eyebrow">Home Stock</p>
         <h2>Load the van</h2>
         <p className="muted">Van capacity is {VAN_LOAD_LIMITS.traySlots} trays plus {VAN_LOAD_LIMITS.featurePots} loose/feature potted plants.</p>
-        <StockList title="Home stock" batches={homeStock} emptyText="No stock at home." actionLabel="Load one" actionType="LOAD_TO_VAN" dispatch={dispatch} />
+        <ExpandableStockList title="Home stock" batches={homeStock} emptyText="No stock at home." actionLabel="Load" actionType="LOAD_TO_VAN" dispatch={dispatch} />
       </Card>
       <Card>
         <h2>Van</h2>
@@ -236,7 +270,7 @@ function VanLoadoutScreen({ state, dispatch }) {
           <div><span>Feature pots</span><strong>{vanLoad.featurePots} / {VAN_LOAD_LIMITS.featurePots}</strong></div>
           <div><span>Batches</span><strong>{vanLoad.batchCount}</strong></div>
         </div>
-        <StockList title="Van stock" batches={vanStock} emptyText="The van is empty." actionLabel="Unload one" actionType="UNLOAD_TO_HOME" dispatch={dispatch} />
+        <ExpandableStockList title="Van stock" batches={vanStock} emptyText="The van is empty." actionLabel="Unload" actionType="UNLOAD_TO_HOME" dispatch={dispatch} />
         <button disabled={vanStock.length === 0} onClick={() => dispatch({ type: 'ADVANCE_PHASE' })}>Confirm loadout</button>
       </Card>
     </div>
@@ -271,7 +305,7 @@ function DisplaySetupScreen({ state, dispatch }) {
       <Card>
         <p className="eyebrow">Display Setup</p>
         <h2>Tray-slot display</h2>
-        <p className="muted">Stock stacks in the list, but the button moves one physical tray at a time.</p>
+        <p className="muted">Species categories expand into individual trays. Fewer than 5 trays open by default; 5 or more start closed.</p>
         <div className="display-zones">
           {DISPLAY_ZONES.map((zone) => (
             <div className="zone" key={zone.id}>
@@ -281,7 +315,7 @@ function DisplaySetupScreen({ state, dispatch }) {
             </div>
           ))}
         </div>
-        <StockList title="Van stock" batches={vanStock} emptyText="No stock left in van." actionLabel="Display one" actionType="PLACE_ON_DISPLAY" dispatch={dispatch} />
+        <ExpandableStockList title="Van stock" batches={vanStock} emptyText="No stock left in van." actionLabel="Display" actionType="PLACE_ON_DISPLAY" dispatch={dispatch} />
       </Card>
       <Card>
         <h2>Visible Stall</h2>
@@ -291,11 +325,10 @@ function DisplaySetupScreen({ state, dispatch }) {
           <div><span>Score</span><strong>{displaySummary.score}</strong></div>
         </div>
         {displaySummary.notes.map((note) => <p key={note} className="fine-print">• {note}</p>)}
-        <StockList title="Display" batches={displayStock} emptyText="Nothing displayed yet." actionLabel="Reduce one" actionType="MOVE_TO_REDUCED" dispatch={dispatch} />
+        <ExpandableStockList title="Display" batches={displayStock} emptyText="Nothing displayed yet." actionLabel="Reduce" actionType="MOVE_TO_REDUCED" allowWater dispatch={dispatch} />
         <ReducedStockList batches={reducedStock} emptyText="No reduced stock." dispatch={dispatch} />
         <div className="button-row">
           <button onClick={() => dispatch({ type: 'ADVANCE_PHASE' })}>Open trading</button>
-          <button className="secondary" onClick={() => dispatch({ type: 'WATER_VISIBLE_STOCK' })}>Water visible stock</button>
           <button className="secondary" onClick={() => dispatch({ type: 'RETURN_DISPLAY_TO_VAN' })}>Return display to van</button>
         </div>
       </Card>
@@ -305,7 +338,6 @@ function DisplaySetupScreen({ state, dispatch }) {
 
 function SpecialRequestPanel({ state, dispatch }) {
   const visibleStock = state.stockBatches.filter((batch) => ['display', 'reduced-area'].includes(batch.location) && batch.quantity > 0);
-  const visibleGroups = groupStockBatches(visibleStock);
   const request = state.activeRequest;
   return (
     <Card>
@@ -321,19 +353,7 @@ function SpecialRequestPanel({ state, dispatch }) {
           <h2>{request.displayName}</h2>
           <p>“{request.customerLine}”</p>
           {request.requiredWarnings?.length > 0 && <p className="fine-print">Warning context: {request.requiredWarnings[0]}</p>}
-          {visibleGroups.length === 0 ? <p className="muted">No visible stock is available to recommend.</p> : (
-            <div className="stack">
-              {visibleGroups.map((group) => (
-                <div className="row-card" key={group.key}>
-                  <div>
-                    <strong>{group.plantName}</strong>
-                    <p className="fine-print">{group.location === 'reduced-area' ? 'Reduced' : 'Display'} · {group.trayCount} trays · {group.totalUnits} units · {money(group.unitRetailPrice)} each</p>
-                  </div>
-                  <button onClick={() => dispatch({ type: 'ANSWER_SPECIAL_REQUEST', batchId: group.representativeBatchId })}>Recommend one</button>
-                </div>
-              ))}
-            </div>
-          )}
+          <ExpandableStockList title="Visible recommendations" batches={visibleStock} emptyText="No visible stock is available to recommend." actionLabel="Recommend" actionType="ANSWER_SPECIAL_REQUEST" dispatch={dispatch} />
           <button className="secondary" onClick={() => dispatch({ type: 'CANCEL_SPECIAL_REQUEST' })}>Dismiss request</button>
         </>
       )}
@@ -355,6 +375,8 @@ function SpecialRequestPanel({ state, dispatch }) {
 
 function TradingScreen({ state, dispatch }) {
   const displaySummary = getDisplayZoneSummary(state.stockBatches);
+  const displayStock = getStockByLocation(state.stockBatches, 'display');
+  const reducedStock = getStockByLocation(state.stockBatches, 'reduced-area');
   return (
     <div className="screen-grid">
       <div className="stack">
@@ -369,29 +391,35 @@ function TradingScreen({ state, dispatch }) {
           </div>
           <div className="button-row">
             <button disabled={(state.tradingWaveIndex ?? 0) >= 4} onClick={() => dispatch({ type: 'RUN_CUSTOMER_WAVE' })}>Simulate customer wave</button>
-            <button className="secondary" onClick={() => dispatch({ type: 'WATER_VISIBLE_STOCK' })}>Water visible stock</button>
             <button className="secondary" onClick={() => dispatch({ type: 'END_TRADING_DAY' })}>End trading day</button>
           </div>
         </Card>
         <SpecialRequestPanel state={state} dispatch={dispatch} />
       </div>
-      <Card>
-        <h2>Trading Log</h2>
-        {state.tradingLog.length === 0 ? <p className="muted">No waves simulated yet.</p> : (
-          <div className="stack">
-            {state.tradingLog.map((wave, index) => (
-              <article className="row-card column-card" key={`${wave.wave}-${index}`}>
-                <div>
-                  <strong>{wave.wave} · {money(wave.revenue)} revenue · Display {wave.displayRating}</strong>
-                  {wave.sales.map((sale, saleIndex) => <p className="fine-print" key={`${sale.customerName}-${saleIndex}`}>{sale.customerName} bought {sale.quantity} × {sale.plantName}: {sale.reason}</p>)}
-                  {wave.missedDemand.map((note) => <p className="fine-print" key={note}>Missed: {note}</p>)}
-                  {wave.conditionEvents?.map((event, eventIndex) => <p className="fine-print" key={`${event.plantName}-${eventIndex}`}>Condition: {event.plantName} {event.fromMoisture} → {event.toMoisture}{event.fromCondition !== event.toCondition ? `, ${event.fromCondition} → ${event.toCondition}` : ''}</p>)}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </Card>
+      <div className="stack">
+        <Card>
+          <h2>Current Stall</h2>
+          <ExpandableStockList title="Display" batches={displayStock} emptyText="Nothing displayed." actionLabel="Reduce" actionType="MOVE_TO_REDUCED" allowWater dispatch={dispatch} />
+          <ReducedStockList batches={reducedStock} emptyText="No reduced stock." dispatch={dispatch} />
+        </Card>
+        <Card>
+          <h2>Trading Log</h2>
+          {state.tradingLog.length === 0 ? <p className="muted">No waves simulated yet.</p> : (
+            <div className="stack">
+              {state.tradingLog.map((wave, index) => (
+                <article className="row-card column-card" key={`${wave.wave}-${index}`}>
+                  <div>
+                    <strong>{wave.wave} · {money(wave.revenue)} revenue · Display {wave.displayRating}</strong>
+                    {wave.sales.map((sale, saleIndex) => <p className="fine-print" key={`${sale.customerName}-${saleIndex}`}>{sale.customerName} bought {sale.quantity} × {sale.plantName}: {sale.reason}</p>)}
+                    {wave.missedDemand.map((note) => <p className="fine-print" key={note}>Missed: {note}</p>)}
+                    {wave.conditionEvents?.map((event, eventIndex) => <p className="fine-print" key={`${event.batchId}-${eventIndex}`}>Condition: {event.plantName} {event.fromMoisture} → {event.toMoisture}{event.fromCondition !== event.toCondition ? `, ${event.fromCondition} → ${event.toCondition}` : ''}</p>)}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
     </div>
   );
 }
@@ -415,7 +443,7 @@ function DailySummary({ state, dispatch }) {
       {conditionEvents.length === 0 ? <p className="muted">No stock condition changes today.</p> : (
         <div className="stack">
           {conditionEvents.map((event, index) => (
-            <article className="row-card column-card" key={`${event.plantName}-${index}`}>
+            <article className="row-card column-card" key={`${event.batchId ?? event.plantName}-${index}`}>
               <strong>{event.plantName}: {event.fromCondition} → {event.toCondition}</strong>
               <p className="fine-print">Moisture: {event.fromMoisture} → {event.toMoisture}. {event.timing ? `${event.timing}: ` : ''}{event.reason}</p>
             </article>
