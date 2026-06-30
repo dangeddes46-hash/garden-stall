@@ -43,6 +43,15 @@ button.secondary {
   background: #836244;
 }
 
+button.link-button {
+  width: 100%;
+  border-radius: 12px;
+  padding: 0.35rem 0;
+  background: transparent;
+  color: #2d271d;
+  text-align: left;
+}
+
 h1,
 h2,
 h3,
@@ -192,6 +201,15 @@ p {
   display: grid;
   gap: 0.65rem;
   margin-bottom: 1rem;
+}
+
+.nested-stack {
+  margin-top: 0.6rem;
+  margin-bottom: 0;
+}
+
+.nested-stack .row-card {
+  background: #fffaf0;
 }
 
 .request-log {
