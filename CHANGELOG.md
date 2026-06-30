@@ -1,5 +1,35 @@
 # Changelog — The Garden Stall
 
+## 2026-06-29 — Special requests and reduced-stock return fix
+
+Advanced the Prototype 0.1 trading loop with special request scoring and corrected reduced-stock routing.
+
+Added:
+
+- `prototype/src/systems/requestSystem.js`
+- special request state in `prototype/src/state/initialState.js`
+- special request actions in `prototype/src/state/reducer.js`
+- special request UI in `prototype/src/App.jsx`
+
+Changed:
+
+- Reduced stock can now return only to the main display or the van during trading-day setup.
+- The old reduced-stock `Return home` option was removed because it wrongly made stock unavailable for the current trading day.
+- Special requests can be generated during trading.
+- Visible display/reduced stock can be recommended to the active request customer.
+- Request outcomes now score as excellent, good, acceptable, poor, or bad.
+- Request results include revenue, reason text, warning context where relevant, and queued notebook reward notes.
+- Daily summary now includes passive sales and request count/revenue.
+- Debug JSON and Markdown exports now include request state and request log.
+
+Still not added:
+
+- condition degradation
+- full zone-specific placement
+- full notebook unlock behaviour
+- staff implementation
+- final art dependency
+
 ## 2026-06-29 — Tray batches, display score, and passive waves
 
 Advanced the Prototype 0.1 implementation from the first shell into the next narrow gameplay pass.
