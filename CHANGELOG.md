@@ -1,5 +1,31 @@
 # Changelog — The Garden Stall
 
+## 2026-06-29 — Condition pressure and watering
+
+Advanced the Prototype 0.1 trading loop with visible-stock watering and end-of-day condition pressure.
+
+Added:
+
+- `prototype/src/systems/conditionSystem.js`
+- condition log state in `prototype/src/state/initialState.js`
+- condition-pressure actions in `prototype/src/state/reducer.js`
+
+Changed:
+
+- Display setup and trading now include a `Water visible stock` action.
+- Visible/reduced stock can dry out based on weather drying modifier, display exposure, and plant moisture profile.
+- Fragile/thirsty stock can degrade at end of day when exposed, dry, or under medium display stress.
+- End-of-day condition events are recorded in daily reports.
+- Daily summary now lists condition and moisture changes.
+- Debug JSON and Markdown exports now include condition events.
+
+Still not added:
+
+- full zone-specific placement
+- full notebook unlock behaviour
+- staff implementation
+- final art dependency
+
 ## 2026-06-29 — Special requests and reduced-stock return fix
 
 Advanced the Prototype 0.1 trading loop with special request scoring and corrected reduced-stock routing.
