@@ -200,7 +200,7 @@ function ReducedStockList({ batches, emptyText, dispatch }) {
             <div key={batch.id} className="row-card">
               <div>
                 <strong>{batch.plantName}</strong>
-                <p className="fine-print">{batch.batchLabel ?? 'batch'} · {batch.quantity} left · reduced trading stock</p>
+                <p className="fine-print">{batch.batchLabel ?? 'batch'} · {batch.quantity} left · {batch.condition} · {batch.moisture} · reduced trading stock</p>
               </div>
               <div className="row-actions wrap-actions">
                 <button onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_DISPLAY', batchId: batch.id })}>Return display</button>
@@ -292,6 +292,7 @@ function DisplaySetupScreen({ state, dispatch }) {
         <ReducedStockList batches={reducedStock} emptyText="No reduced stock." dispatch={dispatch} />
         <div className="button-row">
           <button onClick={() => dispatch({ type: 'ADVANCE_PHASE' })}>Open trading</button>
+          <button className="secondary" onClick={() => dispatch({ type: 'WATER_VISIBLE_STOCK' })}>Water visible stock</button>
           <button className="secondary" onClick={() => dispatch({ type: 'RETURN_DISPLAY_TO_VAN' })}>Return display to van</button>
         </div>
       </Card>
@@ -364,6 +365,7 @@ function TradingScreen({ state, dispatch }) {
           </div>
           <div className="button-row">
             <button disabled={(state.tradingWaveIndex ?? 0) >= 4} onClick={() => dispatch({ type: 'RUN_CUSTOMER_WAVE' })}>Simulate customer wave</button>
+            <button className="secondary" onClick={() => dispatch({ type: 'WATER_VISIBLE_STOCK' })}>Water visible stock</button>
             <button className="secondary" onClick={() => dispatch({ type: 'END_TRADING_DAY' })}>End trading day</button>
           </div>
         </Card>
@@ -391,6 +393,7 @@ function TradingScreen({ state, dispatch }) {
 
 function DailySummary({ state, dispatch }) {
   const latest = state.dailyReports[state.dailyReports.length - 1];
+  const conditionEvents = latest?.conditionEvents ?? [];
   return (
     <Card>
       <p className="eyebrow">Daily Summary</p>
@@ -403,7 +406,18 @@ function DailySummary({ state, dispatch }) {
           <div><span>Requests</span><strong>{latest.requestCount ?? 0}</strong></div>
         </div>
       )}
-      <p className="muted">Condition decay, full notebook unlocks, and weekly summary remain placeholders.</p>
+      <h3>Condition changes</h3>
+      {conditionEvents.length === 0 ? <p className="muted">No stock condition changes today.</p> : (
+        <div className="stack">
+          {conditionEvents.map((event, index) => (
+            <article className="row-card column-card" key={`${event.plantName}-${index}`}>
+              <strong>{event.plantName}: {event.fromCondition} → {event.toCondition}</strong>
+              <p className="fine-print">Moisture: {event.fromMoisture} → {event.toMoisture}. {event.reason}</p>
+            </article>
+          ))}
+        </div>
+      )}
+      <p className="muted">Full notebook unlocks and weekly summary remain placeholders.</p>
       <button onClick={() => dispatch({ type: 'START_EVENING_ORDER' })}>Open evening order</button>
     </Card>
   );
