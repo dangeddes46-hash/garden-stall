@@ -1,5 +1,28 @@
 # Changelog — The Garden Stall
 
+## 2026-06-29 — Tray atomicity, packdown, and tomato drying fix
+
+Corrected stock handling so physical trays are the atomic unit for collection, loading, display, and end-of-day carryover.
+
+Changed:
+
+- Collection now creates one stock batch per physical tray, rather than merging multiple trays of the same species into one batch.
+- Ordering three tomato trays now creates three separate tomato tray batches.
+- Loading to van now moves one physical tray batch at a time.
+- Placing on display now moves one physical tray batch at a time.
+- Display capacity now naturally counts each physical tray batch as one display slot.
+- Unsold van/display/reduced stock is automatically packed back to home stock at end of day.
+- Daily report now records how many unsold tray batches were packed home.
+- Tomato/moderate-moisture drying pressure has been increased so a day on display is visible.
+- Condition pressure still applies before packdown, so stock carries changed moisture/condition into the next day instead of disappearing.
+
+Still not added:
+
+- full zone-specific placement
+- full notebook unlock behaviour
+- staff implementation
+- final art dependency
+
 ## 2026-06-29 — Condition pressure and watering
 
 Advanced the Prototype 0.1 trading loop with visible-stock watering and end-of-day condition pressure.
