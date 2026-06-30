@@ -15,8 +15,10 @@ Current implemented slice:
 - location, route, display, trading, and daily summary screens
 - display slot capacity enforcement
 - simple display score and display rating
+- reduced stock returns only to display or van during the trading day
 - passive customer wave simulation
-- trading log with sales, revenue, and missed demand
+- special request generation and scored recommendations
+- trading log with sales, revenue, missed demand, request outcomes, and recommendation reasons
 - debug reset, phase jump, cash tools, next-day jump, JSON export, and Markdown report export
 
 ## Run locally
@@ -39,11 +41,10 @@ This is not yet the full Prototype 0.1 gameplay loop.
 
 Still placeholder:
 
-- special request scoring
 - condition degradation
 - full zone-specific display placement
 - detailed weekly summary
-- notebook unlocking
+- full notebook unlocking
 - staff pressure metrics
 - final art and visual direction
 
