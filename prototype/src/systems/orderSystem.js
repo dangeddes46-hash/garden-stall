@@ -26,16 +26,16 @@ export function createPendingOrder({ dayPlaced, cart }) {
 }
 
 export function createStockBatchesFromOrder(order) {
-  return order.items.flatMap((item, index) => {
+  return order.items.flatMap((item, itemIndex) => {
     const plant = plantById[item.plantId];
     if (!plant) return [];
 
-    return {
-      id: `${order.id}-batch-${index}-${item.plantId}`,
+    return Array.from({ length: item.count }, (_, trayIndex) => ({
+      id: `${order.id}-tray-${itemIndex}-${trayIndex}-${item.plantId}`,
       sourceOrderId: order.id,
       plantId: item.plantId,
       plantName: plant.displayName,
-      quantity: item.quantity * item.count,
+      quantity: item.quantity,
       quantitySold: 0,
       unitRetailPrice: item.suggestedRetail,
       priceBand: 'normal',
@@ -47,7 +47,9 @@ export function createStockBatchesFromOrder(order) {
       batchType: item.batchType,
       batchLabel: item.batchLabel,
       loadType: item.loadType,
+      trayNumber: trayIndex + 1,
+      trayCountFromOrderLine: item.count,
       notes: [item.supplierNote].filter(Boolean)
-    };
+    }));
   });
 }
