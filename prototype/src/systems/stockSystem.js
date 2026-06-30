@@ -1,4 +1,5 @@
 import { VAN_LOAD_LIMITS } from '../data/vanCapacity.js';
+import { markUnitsSold } from './healthProfileSystem.js';
 
 export function getStockByLocation(stockBatches, location) {
   return stockBatches.filter((batch) => batch.location === location && batch.quantity > 0);
@@ -88,12 +89,10 @@ export function packUnsoldTradingStockHome(stockBatches) {
 export function applySaleToBatch(stockBatches, batchId, quantitySold) {
   return stockBatches.map((batch) => {
     if (batch.id !== batchId) return batch;
-    const saleQuantity = Math.min(quantitySold, batch.quantity);
+    const soldBatch = markUnitsSold(batch, quantitySold);
     return {
-      ...batch,
-      quantity: batch.quantity - saleQuantity,
-      quantitySold: batch.quantitySold + saleQuantity,
-      location: batch.quantity - saleQuantity <= 0 ? 'sold' : batch.location
+      ...soldBatch,
+      location: soldBatch.quantity <= 0 ? 'sold' : batch.location
     };
   });
 }
