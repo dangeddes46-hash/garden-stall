@@ -7,6 +7,7 @@ import { locations, locationById } from './data/locations.js';
 import { weekDayByNumber } from './data/weekScript.js';
 import { calculateCart } from './systems/orderSystem.js';
 import { getStockByLocation, getVanLoadSummary } from './systems/stockSystem.js';
+import { groupStockBatches } from './systems/stockGroupingSystem.js';
 import { getDisplayZoneSummary } from './systems/displaySystem.js';
 import { createDebugExport, createMarkdownReport } from './systems/reportSystem.js';
 import { initialState } from './state/initialState.js';
@@ -170,18 +171,19 @@ function LocationScreen({ state, dispatch }) {
 }
 
 function StockList({ title, batches, emptyText, actionLabel, actionType, dispatch }) {
+  const groups = groupStockBatches(batches);
   return (
     <div>
       <h3>{title}</h3>
-      {batches.length === 0 ? <p className="muted">{emptyText}</p> : (
+      {groups.length === 0 ? <p className="muted">{emptyText}</p> : (
         <div className="stack">
-          {batches.map((batch) => (
-            <div key={batch.id} className="row-card">
+          {groups.map((group) => (
+            <div key={group.key} className="row-card">
               <div>
-                <strong>{batch.plantName}</strong>
-                <p className="fine-print">{batch.batchLabel ?? 'batch'} · {batch.quantity} left · {batch.condition} · {batch.moisture} · {batch.priceBand}</p>
+                <strong>{group.plantName}</strong>
+                <p className="fine-print">{group.trayCount} × {group.batchLabel ?? 'tray'} · {group.totalUnits} units total · {group.condition} · {group.moisture} · {group.priceBand}</p>
               </div>
-              {actionType && <button onClick={() => dispatch({ type: actionType, batchId: batch.id })}>{actionLabel}</button>}
+              {actionType && <button onClick={() => dispatch({ type: actionType, batchId: group.representativeBatchId })}>{actionLabel}</button>}
             </div>
           ))}
         </div>
@@ -191,20 +193,21 @@ function StockList({ title, batches, emptyText, actionLabel, actionType, dispatc
 }
 
 function ReducedStockList({ batches, emptyText, dispatch }) {
+  const groups = groupStockBatches(batches);
   return (
     <div>
       <h3>Reduced area</h3>
-      {batches.length === 0 ? <p className="muted">{emptyText}</p> : (
+      {groups.length === 0 ? <p className="muted">{emptyText}</p> : (
         <div className="stack">
-          {batches.map((batch) => (
-            <div key={batch.id} className="row-card">
+          {groups.map((group) => (
+            <div key={group.key} className="row-card">
               <div>
-                <strong>{batch.plantName}</strong>
-                <p className="fine-print">{batch.batchLabel ?? 'batch'} · {batch.quantity} left · {batch.condition} · {batch.moisture} · reduced trading stock</p>
+                <strong>{group.plantName}</strong>
+                <p className="fine-print">{group.trayCount} × {group.batchLabel ?? 'tray'} · {group.totalUnits} units total · {group.condition} · {group.moisture} · reduced trading stock</p>
               </div>
               <div className="row-actions wrap-actions">
-                <button onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_DISPLAY', batchId: batch.id })}>Return display</button>
-                <button className="secondary" onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_VAN', batchId: batch.id })}>Return van</button>
+                <button onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_DISPLAY', batchId: group.representativeBatchId })}>Return one display</button>
+                <button className="secondary" onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_VAN', batchId: group.representativeBatchId })}>Return one van</button>
               </div>
             </div>
           ))}
@@ -224,7 +227,7 @@ function VanLoadoutScreen({ state, dispatch }) {
         <p className="eyebrow">Home Stock</p>
         <h2>Load the van</h2>
         <p className="muted">Van capacity is {VAN_LOAD_LIMITS.traySlots} trays plus {VAN_LOAD_LIMITS.featurePots} loose/feature potted plants.</p>
-        <StockList title="Home stock" batches={homeStock} emptyText="No stock at home." actionLabel="Load" actionType="LOAD_TO_VAN" dispatch={dispatch} />
+        <StockList title="Home stock" batches={homeStock} emptyText="No stock at home." actionLabel="Load one" actionType="LOAD_TO_VAN" dispatch={dispatch} />
       </Card>
       <Card>
         <h2>Van</h2>
@@ -233,7 +236,7 @@ function VanLoadoutScreen({ state, dispatch }) {
           <div><span>Feature pots</span><strong>{vanLoad.featurePots} / {VAN_LOAD_LIMITS.featurePots}</strong></div>
           <div><span>Batches</span><strong>{vanLoad.batchCount}</strong></div>
         </div>
-        <StockList title="Van stock" batches={vanStock} emptyText="The van is empty." actionLabel="Unload" actionType="UNLOAD_TO_HOME" dispatch={dispatch} />
+        <StockList title="Van stock" batches={vanStock} emptyText="The van is empty." actionLabel="Unload one" actionType="UNLOAD_TO_HOME" dispatch={dispatch} />
         <button disabled={vanStock.length === 0} onClick={() => dispatch({ type: 'ADVANCE_PHASE' })}>Confirm loadout</button>
       </Card>
     </div>
@@ -268,7 +271,7 @@ function DisplaySetupScreen({ state, dispatch }) {
       <Card>
         <p className="eyebrow">Display Setup</p>
         <h2>Tray-slot display</h2>
-        <p className="muted">Still no drag-and-drop. Buttons only. Visible batches now produce a simple display rating.</p>
+        <p className="muted">Stock stacks in the list, but the button moves one physical tray at a time.</p>
         <div className="display-zones">
           {DISPLAY_ZONES.map((zone) => (
             <div className="zone" key={zone.id}>
@@ -278,7 +281,7 @@ function DisplaySetupScreen({ state, dispatch }) {
             </div>
           ))}
         </div>
-        <StockList title="Van stock" batches={vanStock} emptyText="No stock left in van." actionLabel="Display" actionType="PLACE_ON_DISPLAY" dispatch={dispatch} />
+        <StockList title="Van stock" batches={vanStock} emptyText="No stock left in van." actionLabel="Display one" actionType="PLACE_ON_DISPLAY" dispatch={dispatch} />
       </Card>
       <Card>
         <h2>Visible Stall</h2>
@@ -288,7 +291,7 @@ function DisplaySetupScreen({ state, dispatch }) {
           <div><span>Score</span><strong>{displaySummary.score}</strong></div>
         </div>
         {displaySummary.notes.map((note) => <p key={note} className="fine-print">• {note}</p>)}
-        <StockList title="Display" batches={displayStock} emptyText="Nothing displayed yet." actionLabel="Reduce" actionType="MOVE_TO_REDUCED" dispatch={dispatch} />
+        <StockList title="Display" batches={displayStock} emptyText="Nothing displayed yet." actionLabel="Reduce one" actionType="MOVE_TO_REDUCED" dispatch={dispatch} />
         <ReducedStockList batches={reducedStock} emptyText="No reduced stock." dispatch={dispatch} />
         <div className="button-row">
           <button onClick={() => dispatch({ type: 'ADVANCE_PHASE' })}>Open trading</button>
@@ -302,6 +305,7 @@ function DisplaySetupScreen({ state, dispatch }) {
 
 function SpecialRequestPanel({ state, dispatch }) {
   const visibleStock = state.stockBatches.filter((batch) => ['display', 'reduced-area'].includes(batch.location) && batch.quantity > 0);
+  const visibleGroups = groupStockBatches(visibleStock);
   const request = state.activeRequest;
   return (
     <Card>
@@ -317,15 +321,15 @@ function SpecialRequestPanel({ state, dispatch }) {
           <h2>{request.displayName}</h2>
           <p>“{request.customerLine}”</p>
           {request.requiredWarnings?.length > 0 && <p className="fine-print">Warning context: {request.requiredWarnings[0]}</p>}
-          {visibleStock.length === 0 ? <p className="muted">No visible stock is available to recommend.</p> : (
+          {visibleGroups.length === 0 ? <p className="muted">No visible stock is available to recommend.</p> : (
             <div className="stack">
-              {visibleStock.map((batch) => (
-                <div className="row-card" key={batch.id}>
+              {visibleGroups.map((group) => (
+                <div className="row-card" key={group.key}>
                   <div>
-                    <strong>{batch.plantName}</strong>
-                    <p className="fine-print">{batch.location === 'reduced-area' ? 'Reduced' : 'Display'} · {batch.quantity} left · {money(batch.unitRetailPrice)} each</p>
+                    <strong>{group.plantName}</strong>
+                    <p className="fine-print">{group.location === 'reduced-area' ? 'Reduced' : 'Display'} · {group.trayCount} trays · {group.totalUnits} units · {money(group.unitRetailPrice)} each</p>
                   </div>
-                  <button onClick={() => dispatch({ type: 'ANSWER_SPECIAL_REQUEST', batchId: batch.id })}>Recommend</button>
+                  <button onClick={() => dispatch({ type: 'ANSWER_SPECIAL_REQUEST', batchId: group.representativeBatchId })}>Recommend one</button>
                 </div>
               ))}
             </div>
@@ -357,7 +361,7 @@ function TradingScreen({ state, dispatch }) {
         <Card>
           <p className="eyebrow">Trading Day</p>
           <h2>Passive customer waves</h2>
-          <p>Each wave generates a few location-weighted customers. They buy visible stock if tags, display, condition, and price feel good enough.</p>
+          <p>Each wave generates a few location-weighted customers, then visible stock takes a small drying/condition tick.</p>
           <div className="totals">
             <div><span>Next wave</span><strong>{(state.tradingWaveIndex ?? 0) + 1}</strong></div>
             <div><span>Display</span><strong>{displaySummary.rating}</strong></div>
@@ -381,6 +385,7 @@ function TradingScreen({ state, dispatch }) {
                   <strong>{wave.wave} · {money(wave.revenue)} revenue · Display {wave.displayRating}</strong>
                   {wave.sales.map((sale, saleIndex) => <p className="fine-print" key={`${sale.customerName}-${saleIndex}`}>{sale.customerName} bought {sale.quantity} × {sale.plantName}: {sale.reason}</p>)}
                   {wave.missedDemand.map((note) => <p className="fine-print" key={note}>Missed: {note}</p>)}
+                  {wave.conditionEvents?.map((event, eventIndex) => <p className="fine-print" key={`${event.plantName}-${eventIndex}`}>Condition: {event.plantName} {event.fromMoisture} → {event.toMoisture}{event.fromCondition !== event.toCondition ? `, ${event.fromCondition} → ${event.toCondition}` : ''}</p>)}
                 </div>
               </article>
             ))}
@@ -412,7 +417,7 @@ function DailySummary({ state, dispatch }) {
           {conditionEvents.map((event, index) => (
             <article className="row-card column-card" key={`${event.plantName}-${index}`}>
               <strong>{event.plantName}: {event.fromCondition} → {event.toCondition}</strong>
-              <p className="fine-print">Moisture: {event.fromMoisture} → {event.toMoisture}. {event.reason}</p>
+              <p className="fine-print">Moisture: {event.fromMoisture} → {event.toMoisture}. {event.timing ? `${event.timing}: ` : ''}{event.reason}</p>
             </article>
           ))}
         </div>
