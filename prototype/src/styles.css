@@ -170,6 +170,11 @@ p {
   gap: 0.75rem;
 }
 
+.row-card.column-card {
+  align-items: flex-start;
+  display: block;
+}
+
 .row-actions {
   flex-shrink: 0;
 }
