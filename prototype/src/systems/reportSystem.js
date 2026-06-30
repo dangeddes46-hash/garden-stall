@@ -37,7 +37,7 @@ export function createMarkdownReport(state) {
     : '- No special requests resolved yet';
 
   const conditionLines = state.conditionLog?.length
-    ? state.conditionLog.map((event) => `- ${event.plantName}: ${event.fromCondition} → ${event.toCondition}; ${event.fromMoisture} → ${event.toMoisture}; ${event.reason}`).join('\n')
+    ? state.conditionLog.map((event) => `- ${event.timing ?? 'unknown'}: ${event.plantName}: ${event.fromCondition} → ${event.toCondition}; ${event.fromMoisture} → ${event.toMoisture}; ${event.reason}`).join('\n')
     : '- No condition changes recorded yet';
 
   return `# Garden Stall Prototype 0.1 Debug Report\n\n` +
