@@ -10,17 +10,20 @@ Current implemented slice:
 - Day 0 wholesaler order
 - Day 1 morning collection
 - tray-grid batch profiles: 2x3, 4x6, 3x5, feature pot groups, and sundry packs
+- collection creates one stock batch per physical tray, not one merged batch per species/order line
 - van capacity model: 6 tray spaces plus 6 loose/feature potted plants
+- loading and display movement work one tray batch at a time
 - basic home stock / van loadout flow
 - location, route, display, trading, and daily summary screens
-- display slot capacity enforcement
+- display slot capacity enforcement per tray batch
 - simple display score and display rating
 - reduced stock returns only to display or van during the trading day
+- unsold van/display/reduced stock is packed back home at end of day
 - passive customer wave simulation
 - special request generation and scored recommendations
 - visible-stock watering action
 - end-of-day condition pressure based on display exposure, moisture, plant risk, and weather stress
-- trading log with sales, revenue, missed demand, request outcomes, recommendation reasons, and condition changes
+- trading log with sales, revenue, missed demand, request outcomes, recommendation reasons, packdown count, and condition changes
 - debug reset, phase jump, cash tools, next-day jump, JSON export, and Markdown report export
 
 ## Run locally
