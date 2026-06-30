@@ -50,6 +50,11 @@ export function getDisplayZoneSummary(stockBatches) {
   };
 }
 
+export function canPlaceBatchOnDisplay(stockBatches) {
+  const summary = getDisplayZoneSummary(stockBatches);
+  return summary.usedSlots < summary.zoneCapacity;
+}
+
 export function getDisplaySaleModifier(displaySummary) {
   if (displaySummary.rating === 'strong') return 2;
   if (displaySummary.rating === 'good') return 1;
