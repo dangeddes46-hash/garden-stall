@@ -5,6 +5,7 @@ import { canLoadBatchToVan, moveStockBatch, resetDisplayToVan } from '../systems
 import { simulateCustomerWave } from '../systems/customerSystem.js';
 import { canPlaceBatchOnDisplay } from '../systems/displaySystem.js';
 import { pickSpecialRequest, scoreSpecialRequest } from '../systems/requestSystem.js';
+import { applyEndOfDayConditionPressure, waterVisibleStock } from '../systems/conditionSystem.js';
 import { initialState } from './initialState.js';
 
 function log(state, message) {
@@ -65,7 +66,8 @@ export function reducer(state, action) {
         phase: PHASES.MORNING_COLLECTION,
         tradingWaveIndex: 0,
         tradingLog: [],
-        activeRequest: null
+        activeRequest: null,
+        conditionLog: []
       }, `Placed order for £${order.total.toFixed(2)}. Collection scheduled for Day ${order.dayArrives}.`);
     }
 
@@ -125,6 +127,11 @@ export function reducer(state, action) {
     case 'RETURN_DISPLAY_TO_VAN':
       return log({ ...state, stockBatches: resetDisplayToVan(state.stockBatches) }, 'Returned display stock to van.');
 
+    case 'WATER_VISIBLE_STOCK': {
+      const watered = waterVisibleStock(state.stockBatches);
+      return log({ ...state, stockBatches: watered.stockBatches }, `Watered ${watered.changedCount} visible stock batches.`);
+    }
+
     case 'RUN_CUSTOMER_WAVE': {
       if (state.phase !== PHASES.TRADING) return log(state, 'Customer wave blocked: not in trading phase.');
       const result = simulateCustomerWave(state);
@@ -162,8 +169,11 @@ export function reducer(state, action) {
       const requestRevenue = state.requestLog.reduce((sum, request) => sum + (request.revenue ?? 0), 0);
       const salesCount = state.tradingLog.reduce((sum, wave) => sum + (wave.sales?.length ?? 0), 0);
       const missedCount = state.tradingLog.reduce((sum, wave) => sum + (wave.missedDemand?.length ?? 0), 0);
+      const conditionResult = applyEndOfDayConditionPressure(state.stockBatches, state.selectedWeather);
       return log({
         ...state,
+        stockBatches: conditionResult.stockBatches,
+        conditionLog: conditionResult.conditionEvents,
         activeRequest: null,
         phase: PHASES.DAILY_SUMMARY,
         dailyReports: [
@@ -180,10 +190,11 @@ export function reducer(state, action) {
             missedCount,
             tradingLog: state.tradingLog,
             requestLog: state.requestLog,
-            note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue.`
+            conditionEvents: conditionResult.conditionEvents,
+            note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionResult.conditionEvents.length} condition changes.`
           }
         ]
-      }, 'Ended trading day with passive wave and request report.');
+      }, `Ended trading day with ${conditionResult.conditionEvents.length} condition changes.`);
     }
 
     case 'START_EVENING_ORDER':
@@ -204,7 +215,8 @@ export function reducer(state, action) {
         selectedWeather: weekDayByNumber[Math.min(7, state.currentDay + 1)]?.weather ?? null,
         tradingWaveIndex: 0,
         tradingLog: [],
-        activeRequest: null
+        activeRequest: null,
+        conditionLog: []
       }, 'Debug jumped to next day.');
 
     case 'RESET_PROTOTYPE':
