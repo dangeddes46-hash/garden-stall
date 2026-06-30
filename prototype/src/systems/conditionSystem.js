@@ -23,7 +23,9 @@ function conditionPressureForBatch(batch, weather) {
   const inVan = batch.location === 'van';
   const highRisk = plant.conditionRisk === 'high';
   const moderateRisk = plant.conditionRisk === 'moderate';
+  const dryTolerant = plant.moistureProfile === 'dry-tolerant';
   const thirsty = plant.moistureProfile === 'thirsty';
+  const moderateMoisture = plant.moistureProfile === 'moderate';
   const stress = weather?.displayStress ?? 'low';
   const dryingModifier = weather?.dryingModifier ?? 1;
 
@@ -32,11 +34,14 @@ function conditionPressureForBatch(batch, weather) {
   const reasons = [];
 
   if (exposed) {
-    moistureSteps += dryingModifier >= 1.1 || thirsty ? 2 : 1;
+    moistureSteps += 1;
+    if (dryingModifier >= 1 || thirsty || moderateMoisture) moistureSteps += 1;
+    if (dryingModifier >= 1.2 || thirsty) moistureSteps += 1;
+    if (dryTolerant) moistureSteps = Math.max(1, moistureSteps - 1);
     reasons.push('spent the day on display');
   } else if (inVan) {
     moistureSteps += dryingModifier >= 1.1 ? 1 : 0;
-    reasons.push('spent the day in the van');
+    if (moistureSteps > 0) reasons.push('spent the day in the van');
   }
 
   if (exposed && stress === 'medium' && (highRisk || thirsty)) {
@@ -54,7 +59,7 @@ function conditionPressureForBatch(batch, weather) {
     reasons.push('was already tired in reduced stock');
   }
 
-  if (moderateRisk && exposed && stress === 'medium' && batch.moisture === 'dry') {
+  if (moderateRisk && exposed && stress === 'medium' && ['dry', 'bone-dry'].includes(batch.moisture)) {
     conditionSteps += 1;
     reasons.push('moderate-risk stock dried on a stressful day');
   }
