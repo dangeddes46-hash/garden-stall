@@ -3,6 +3,7 @@ import { weekDayByNumber } from '../data/weekScript.js';
 import { calculateCart, createPendingOrder, createStockBatchesFromOrder } from '../systems/orderSystem.js';
 import { canLoadBatchToVan, moveStockBatch, resetDisplayToVan } from '../systems/stockSystem.js';
 import { simulateCustomerWave } from '../systems/customerSystem.js';
+import { canPlaceBatchOnDisplay } from '../systems/displaySystem.js';
 import { initialState } from './initialState.js';
 
 function log(state, message) {
@@ -103,11 +104,13 @@ export function reducer(state, action) {
     case 'UNLOAD_TO_HOME':
       return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'home') }, 'Moved stock batch back to home stock.');
 
-    case 'PLACE_ON_DISPLAY':
-      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'display') }, 'Placed stock batch on display placeholder.');
+    case 'PLACE_ON_DISPLAY': {
+      if (!canPlaceBatchOnDisplay(state.stockBatches)) return log(state, 'Display blocked: all current display slots are full.');
+      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'display') }, 'Placed stock batch on display.');
+    }
 
     case 'MOVE_TO_REDUCED':
-      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'reduced-area') }, 'Moved stock batch to reduced area placeholder.');
+      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'reduced-area') }, 'Moved stock batch to reduced area.');
 
     case 'RETURN_DISPLAY_TO_VAN':
       return log({ ...state, stockBatches: resetDisplayToVan(state.stockBatches) }, 'Returned display stock to van.');
