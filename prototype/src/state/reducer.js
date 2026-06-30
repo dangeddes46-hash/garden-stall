@@ -5,7 +5,7 @@ import { canLoadBatchToVan, moveStockBatch, packUnsoldTradingStockHome, resetDis
 import { simulateCustomerWave } from '../systems/customerSystem.js';
 import { canPlaceBatchOnDisplay } from '../systems/displaySystem.js';
 import { pickSpecialRequest, scoreSpecialRequest } from '../systems/requestSystem.js';
-import { applyEndOfDayConditionPressure, applyTradingWaveConditionPressure, waterVisibleStock } from '../systems/conditionSystem.js';
+import { applyEndOfDayConditionPressure, applyTradingWaveConditionPressure, waterStockBatch } from '../systems/conditionSystem.js';
 import { initialState } from './initialState.js';
 
 function log(state, message) {
@@ -127,9 +127,9 @@ export function reducer(state, action) {
     case 'RETURN_DISPLAY_TO_VAN':
       return log({ ...state, stockBatches: resetDisplayToVan(state.stockBatches) }, 'Returned display stock to van.');
 
-    case 'WATER_VISIBLE_STOCK': {
-      const watered = waterVisibleStock(state.stockBatches);
-      return log({ ...state, stockBatches: watered.stockBatches }, `Watered ${watered.changedCount} visible stock tray batches.`);
+    case 'WATER_STOCK_BATCH': {
+      const watered = waterStockBatch(state.stockBatches, action.batchId);
+      return log({ ...state, stockBatches: watered.stockBatches }, `Watered ${watered.changedCount} plants in one tray batch.`);
     }
 
     case 'RUN_CUSTOMER_WAVE': {
