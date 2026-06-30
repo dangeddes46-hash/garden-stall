@@ -1,7 +1,7 @@
 import { PHASES, STARTING_CASH } from '../data/constants.js';
 import { weekDayByNumber } from '../data/weekScript.js';
 import { calculateCart, createPendingOrder, createStockBatchesFromOrder } from '../systems/orderSystem.js';
-import { canLoadBatchToVan, moveStockBatch, resetDisplayToVan } from '../systems/stockSystem.js';
+import { canLoadBatchToVan, moveStockBatch, packUnsoldTradingStockHome, resetDisplayToVan } from '../systems/stockSystem.js';
 import { simulateCustomerWave } from '../systems/customerSystem.js';
 import { canPlaceBatchOnDisplay } from '../systems/displaySystem.js';
 import { pickSpecialRequest, scoreSpecialRequest } from '../systems/requestSystem.js';
@@ -82,7 +82,7 @@ export function reducer(state, action) {
         stockBatches: [...state.stockBatches, ...newBatches],
         phase: PHASES.WEATHER,
         selectedWeather: weekDayByNumber[state.currentDay]?.weather ?? null
-      }, `Collected ${newBatches.length} stock batches into home stock.`);
+      }, `Collected ${newBatches.length} stock tray batches into home stock.`);
     }
 
     case 'ADVANCE_PHASE': {
@@ -102,34 +102,34 @@ export function reducer(state, action) {
 
     case 'LOAD_TO_VAN': {
       if (!canLoadBatchToVan(state.stockBatches, action.batchId)) return log(state, 'Load blocked: van capacity is 6 trays and 6 feature potted plants.');
-      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'van') }, 'Loaded stock batch into van.');
+      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'van') }, 'Loaded one tray batch into van.');
     }
 
     case 'UNLOAD_TO_HOME':
-      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'home') }, 'Moved stock batch back to home stock.');
+      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'home') }, 'Moved one tray batch back to home stock.');
 
     case 'PLACE_ON_DISPLAY': {
       if (!canPlaceBatchOnDisplay(state.stockBatches)) return log(state, 'Display blocked: all current display slots are full.');
-      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'display') }, 'Placed stock batch on display.');
+      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'display') }, 'Placed one tray batch on display.');
     }
 
     case 'MOVE_TO_REDUCED':
-      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'reduced-area') }, 'Moved stock batch to reduced area.');
+      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'reduced-area') }, 'Moved one tray batch to reduced area.');
 
     case 'RETURN_REDUCED_TO_DISPLAY': {
       if (!canPlaceBatchOnDisplay(state.stockBatches.filter((batch) => batch.id !== action.batchId))) return log(state, 'Display blocked: all current display slots are full.');
-      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'display') }, 'Returned reduced stock to display.');
+      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'display') }, 'Returned reduced tray batch to display.');
     }
 
     case 'RETURN_REDUCED_TO_VAN':
-      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'van') }, 'Returned reduced stock to van.');
+      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'van') }, 'Returned reduced tray batch to van.');
 
     case 'RETURN_DISPLAY_TO_VAN':
       return log({ ...state, stockBatches: resetDisplayToVan(state.stockBatches) }, 'Returned display stock to van.');
 
     case 'WATER_VISIBLE_STOCK': {
       const watered = waterVisibleStock(state.stockBatches);
-      return log({ ...state, stockBatches: watered.stockBatches }, `Watered ${watered.changedCount} visible stock batches.`);
+      return log({ ...state, stockBatches: watered.stockBatches }, `Watered ${watered.changedCount} visible stock tray batches.`);
     }
 
     case 'RUN_CUSTOMER_WAVE': {
@@ -170,9 +170,10 @@ export function reducer(state, action) {
       const salesCount = state.tradingLog.reduce((sum, wave) => sum + (wave.sales?.length ?? 0), 0);
       const missedCount = state.tradingLog.reduce((sum, wave) => sum + (wave.missedDemand?.length ?? 0), 0);
       const conditionResult = applyEndOfDayConditionPressure(state.stockBatches, state.selectedWeather);
+      const packdown = packUnsoldTradingStockHome(conditionResult.stockBatches);
       return log({
         ...state,
-        stockBatches: conditionResult.stockBatches,
+        stockBatches: packdown.stockBatches,
         conditionLog: conditionResult.conditionEvents,
         activeRequest: null,
         phase: PHASES.DAILY_SUMMARY,
@@ -188,13 +189,14 @@ export function reducer(state, action) {
             salesCount,
             requestCount: state.requestLog.length,
             missedCount,
+            packedCount: packdown.packedCount,
             tradingLog: state.tradingLog,
             requestLog: state.requestLog,
             conditionEvents: conditionResult.conditionEvents,
-            note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionResult.conditionEvents.length} condition changes.`
+            note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionResult.conditionEvents.length} condition changes, ${packdown.packedCount} unsold tray batches packed home.`
           }
         ]
-      }, `Ended trading day with ${conditionResult.conditionEvents.length} condition changes.`);
+      }, `Ended trading day: ${packdown.packedCount} unsold tray batches packed home.`);
     }
 
     case 'START_EVENING_ORDER':
