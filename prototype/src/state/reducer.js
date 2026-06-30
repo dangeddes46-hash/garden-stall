@@ -4,6 +4,7 @@ import { calculateCart, createPendingOrder, createStockBatchesFromOrder } from '
 import { canLoadBatchToVan, moveStockBatch, resetDisplayToVan } from '../systems/stockSystem.js';
 import { simulateCustomerWave } from '../systems/customerSystem.js';
 import { canPlaceBatchOnDisplay } from '../systems/displaySystem.js';
+import { pickSpecialRequest, scoreSpecialRequest } from '../systems/requestSystem.js';
 import { initialState } from './initialState.js';
 
 function log(state, message) {
@@ -63,7 +64,8 @@ export function reducer(state, action) {
         currentDay: state.currentDay === 0 ? 1 : state.currentDay + 1,
         phase: PHASES.MORNING_COLLECTION,
         tradingWaveIndex: 0,
-        tradingLog: []
+        tradingLog: [],
+        activeRequest: null
       }, `Placed order for £${order.total.toFixed(2)}. Collection scheduled for Day ${order.dayArrives}.`);
     }
 
@@ -112,6 +114,14 @@ export function reducer(state, action) {
     case 'MOVE_TO_REDUCED':
       return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'reduced-area') }, 'Moved stock batch to reduced area.');
 
+    case 'RETURN_REDUCED_TO_DISPLAY': {
+      if (!canPlaceBatchOnDisplay(state.stockBatches.filter((batch) => batch.id !== action.batchId))) return log(state, 'Display blocked: all current display slots are full.');
+      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'display') }, 'Returned reduced stock to display.');
+    }
+
+    case 'RETURN_REDUCED_TO_VAN':
+      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'van') }, 'Returned reduced stock to van.');
+
     case 'RETURN_DISPLAY_TO_VAN':
       return log({ ...state, stockBatches: resetDisplayToVan(state.stockBatches) }, 'Returned display stock to van.');
 
@@ -125,12 +135,36 @@ export function reducer(state, action) {
       }, `Simulated ${result.report.wave} wave: £${result.report.revenue.toFixed(2)} revenue.`);
     }
 
+    case 'GENERATE_SPECIAL_REQUEST': {
+      if (state.phase !== PHASES.TRADING) return log(state, 'Special request blocked: not in trading phase.');
+      if (state.activeRequest) return log(state, 'Special request already active.');
+      const request = pickSpecialRequest(state);
+      return log({ ...state, activeRequest: request }, `Special request generated: ${request.displayName}.`);
+    }
+
+    case 'ANSWER_SPECIAL_REQUEST': {
+      if (!state.activeRequest) return log(state, 'No active special request to answer.');
+      const scored = scoreSpecialRequest({ state, request: state.activeRequest, batchId: action.batchId });
+      return log({
+        ...state,
+        stockBatches: scored.stockBatches,
+        cash: scored.cash,
+        activeRequest: null,
+        requestLog: [scored.result, ...state.requestLog].slice(0, 12)
+      }, `Special request result: ${scored.result.outcome} with ${scored.result.plantName}.`);
+    }
+
+    case 'CANCEL_SPECIAL_REQUEST':
+      return log({ ...state, activeRequest: null }, 'Special request dismissed without recommendation.');
+
     case 'END_TRADING_DAY': {
       const revenue = state.tradingLog.reduce((sum, wave) => sum + (wave.revenue ?? 0), 0);
+      const requestRevenue = state.requestLog.reduce((sum, request) => sum + (request.revenue ?? 0), 0);
       const salesCount = state.tradingLog.reduce((sum, wave) => sum + (wave.sales?.length ?? 0), 0);
       const missedCount = state.tradingLog.reduce((sum, wave) => sum + (wave.missedDemand?.length ?? 0), 0);
       return log({
         ...state,
+        activeRequest: null,
         phase: PHASES.DAILY_SUMMARY,
         dailyReports: [
           ...state.dailyReports,
@@ -138,14 +172,18 @@ export function reducer(state, action) {
             day: state.currentDay,
             cash: state.cash,
             locationId: state.selectedLocationId,
-            revenue,
+            revenue: revenue + requestRevenue,
+            passiveRevenue: revenue,
+            requestRevenue,
             salesCount,
+            requestCount: state.requestLog.length,
             missedCount,
             tradingLog: state.tradingLog,
-            note: `Passive wave report: ${salesCount} sales, ${missedCount} missed demand notes, £${revenue.toFixed(2)} revenue.`
+            requestLog: state.requestLog,
+            note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue.`
           }
         ]
-      }, 'Ended trading day with passive wave report.');
+      }, 'Ended trading day with passive wave and request report.');
     }
 
     case 'START_EVENING_ORDER':
@@ -165,7 +203,8 @@ export function reducer(state, action) {
         selectedLocationId: null,
         selectedWeather: weekDayByNumber[Math.min(7, state.currentDay + 1)]?.weather ?? null,
         tradingWaveIndex: 0,
-        tradingLog: []
+        tradingLog: [],
+        activeRequest: null
       }, 'Debug jumped to next day.');
 
     case 'RESET_PROTOTYPE':
