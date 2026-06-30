@@ -1,27 +1,14 @@
 import { plantById } from '../data/plants.js';
+import { dryBatchUnits, waterBatchUnits, worsenBatchUnits } from './healthProfileSystem.js';
 
-const conditionOrder = ['excellent', 'good', 'tired', 'past-peak', 'unsellable'];
-const moistureOrder = ['watered', 'damp', 'dry', 'bone-dry'];
-
-function worsenCondition(condition, steps = 1) {
-  const index = conditionOrder.indexOf(condition);
-  if (index < 0) return condition;
-  return conditionOrder[Math.min(conditionOrder.length - 1, index + steps)];
-}
-
-function dryMoisture(moisture, steps = 1) {
-  const index = moistureOrder.indexOf(moisture);
-  if (index < 0) return moisture;
-  return moistureOrder[Math.min(moistureOrder.length - 1, index + steps)];
-}
-
-function createConditionEvent(batch, nextCondition, nextMoisture, reason, timing) {
+function createConditionEvent(batch, nextBatch, reason, timing) {
   return {
+    batchId: batch.id,
     plantName: batch.plantName,
     fromCondition: batch.condition,
-    toCondition: nextCondition,
+    toCondition: nextBatch.condition,
     fromMoisture: batch.moisture,
-    toMoisture: nextMoisture,
+    toMoisture: nextBatch.moisture,
     location: batch.location,
     timing,
     reason
@@ -99,25 +86,35 @@ function applyConditionPressure(stockBatches, weather, intensity, timing) {
     const pressure = conditionPressureForBatch(batch, weather, intensity);
     if (pressure.moistureSteps === 0 && pressure.conditionSteps === 0) return batch;
 
-    const nextMoisture = dryMoisture(batch.moisture, pressure.moistureSteps);
-    let nextCondition = worsenCondition(batch.condition, pressure.conditionSteps);
+    const dried = dryBatchUnits(batch, pressure.moistureSteps).batch;
+    const conditionSteps = dried.moisture === 'bone-dry' && ['display', 'reduced-area'].includes(batch.location)
+      ? pressure.conditionSteps + (intensity === 'wave' ? 0 : 1)
+      : pressure.conditionSteps;
+    const nextBatch = worsenBatchUnits(dried, conditionSteps).batch;
 
-    if (nextMoisture === 'bone-dry' && ['display', 'reduced-area'].includes(batch.location)) {
-      nextCondition = worsenCondition(nextCondition, intensity === 'wave' ? 0 : 1);
+    if (nextBatch.moisture !== batch.moisture || nextBatch.condition !== batch.condition) {
+      conditionEvents.push(createConditionEvent(batch, nextBatch, pressure.reason, timing));
     }
 
-    if (nextMoisture !== batch.moisture || nextCondition !== batch.condition) {
-      conditionEvents.push(createConditionEvent(batch, nextCondition, nextMoisture, pressure.reason, timing));
-    }
-
-    return {
-      ...batch,
-      moisture: nextMoisture,
-      condition: nextCondition
-    };
+    return nextBatch;
   });
 
   return { stockBatches: nextStock, conditionEvents };
+}
+
+export function waterStockBatch(stockBatches, batchId) {
+  let changedCount = 0;
+  const nextStock = stockBatches.map((batch) => {
+    if (batch.id !== batchId) return batch;
+    if (!['display', 'reduced-area'].includes(batch.location)) return batch;
+    const plant = plantById[batch.plantId];
+    if (plant?.moistureProfile === 'none') return batch;
+    const watered = waterBatchUnits(batch);
+    changedCount += watered.changedCount;
+    return watered.batch;
+  });
+
+  return { stockBatches: nextStock, changedCount };
 }
 
 export function waterVisibleStock(stockBatches) {
@@ -126,12 +123,9 @@ export function waterVisibleStock(stockBatches) {
     if (!['display', 'reduced-area'].includes(batch.location)) return batch;
     const plant = plantById[batch.plantId];
     if (plant?.moistureProfile === 'none') return batch;
-    if (batch.moisture === 'watered') return batch;
-    changedCount += 1;
-    return {
-      ...batch,
-      moisture: 'watered'
-    };
+    const watered = waterBatchUnits(batch);
+    changedCount += watered.changedCount;
+    return watered.batch;
   });
 
   return { stockBatches: nextStock, changedCount };
