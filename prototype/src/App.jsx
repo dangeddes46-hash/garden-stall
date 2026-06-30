@@ -7,6 +7,7 @@ import { locations, locationById } from './data/locations.js';
 import { weekDayByNumber } from './data/weekScript.js';
 import { calculateCart } from './systems/orderSystem.js';
 import { getStockByLocation, getVanLoadSummary } from './systems/stockSystem.js';
+import { getDisplayZoneSummary } from './systems/displaySystem.js';
 import { createDebugExport, createMarkdownReport } from './systems/reportSystem.js';
 import { initialState } from './state/initialState.js';
 import { reducer } from './state/reducer.js';
@@ -46,9 +47,7 @@ function WholesalerScreen({ state, dispatch }) {
       <Card>
         <p className="eyebrow">County Plant Wholesale</p>
         <h2>{state.currentDay === 0 ? 'Opening Evening Order' : 'Evening Order'}</h2>
-        <p className="muted">
-          Choose stock for collection tomorrow morning. Sold-out lines stay visible so the trade site already feels like a supplier catalogue.
-        </p>
+        <p className="muted">Choose stock for collection tomorrow morning. Sold-out lines stay visible so the trade site already feels like a supplier catalogue.</p>
         <div className="listing-grid">
           {listings.map((listing) => {
             const plant = plantById[listing.plantId];
@@ -60,7 +59,7 @@ function WholesalerScreen({ state, dispatch }) {
                   <span className={`pill ${disabled ? 'danger' : 'ok'}`}>{listing.availability}</span>
                 </div>
                 <p>{plant.retailNote}</p>
-                <p className="fine-print">Batch: {listing.quantity} · Trade cost: {money(listing.wholesaleCost)} · Suggested retail: {money(listing.suggestedRetail)} each</p>
+                <p className="fine-print">Batch: {listing.batchLabel} · {listing.quantity} units · Trade cost: {money(listing.wholesaleCost)} · Suggested retail: {money(listing.suggestedRetail)} each</p>
                 <p className="fine-print">{listing.supplierNote}</p>
                 <button disabled={disabled} onClick={() => dispatch({ type: 'ADD_TO_CART', listing })}>Add batch</button>
               </article>
@@ -80,7 +79,7 @@ function WholesalerScreen({ state, dispatch }) {
               <div key={item.id} className="row-card">
                 <div>
                   <strong>{plantById[item.plantId]?.displayName}</strong>
-                  <p className="fine-print">{item.count} × batch of {item.quantity}</p>
+                  <p className="fine-print">{item.count} × {item.batchLabel} ({item.quantity} units)</p>
                 </div>
                 <div className="row-actions">
                   <span>{money(item.wholesaleCost * item.count)}</span>
@@ -107,11 +106,10 @@ function WholesalerScreen({ state, dispatch }) {
 
 function CollectionScreen({ state, dispatch }) {
   const collectible = state.pendingOrders.filter((order) => order.dayArrives <= state.currentDay && !order.collected);
-
   return (
     <Card>
       <p className="eyebrow">Morning Collection</p>
-      <h2>Collect yesterday’s wholesale order</h2>
+      <h2>Collect yesterday's wholesale order</h2>
       {collectible.length === 0 ? (
         <p>No orders are ready yet. Use debug controls if you jumped here manually.</p>
       ) : (
@@ -135,7 +133,6 @@ function CollectionScreen({ state, dispatch }) {
 function WeatherScreen({ state, dispatch }) {
   const script = weekDayByNumber[state.currentDay];
   const weather = state.selectedWeather ?? script?.weather;
-
   return (
     <Card>
       <p className="eyebrow">Day Conditions</p>
@@ -146,7 +143,7 @@ function WeatherScreen({ state, dispatch }) {
         <li>Drying modifier: {weather?.dryingModifier ?? 'n/a'}</li>
         <li>Display stress: {weather?.displayStress ?? 'n/a'}</li>
       </ul>
-      <button onClick={() => dispatch({ type: 'ADVANCE_PHASE' })}>Choose today’s location</button>
+      <button onClick={() => dispatch({ type: 'ADVANCE_PHASE' })}>Choose today's location</button>
     </Card>
   );
 }
@@ -182,7 +179,7 @@ function StockList({ title, batches, emptyText, actionLabel, actionType, dispatc
             <div key={batch.id} className="row-card">
               <div>
                 <strong>{batch.plantName}</strong>
-                <p className="fine-print">{batch.quantity} units · {batch.condition} · {batch.moisture} · {batch.priceBand}</p>
+                <p className="fine-print">{batch.batchLabel ?? 'batch'} · {batch.quantity} left · {batch.condition} · {batch.moisture} · {batch.priceBand}</p>
               </div>
               {actionType && <button onClick={() => dispatch({ type: actionType, batchId: batch.id })}>{actionLabel}</button>}
             </div>
@@ -197,7 +194,6 @@ function VanLoadoutScreen({ state, dispatch }) {
   const homeStock = getStockByLocation(state.stockBatches, 'home');
   const vanStock = getStockByLocation(state.stockBatches, 'van');
   const vanLoad = getVanLoadSummary(state.stockBatches);
-
   return (
     <div className="screen-grid">
       <Card>
@@ -232,7 +228,7 @@ function RouteConfirmScreen({ state, dispatch }) {
         <div><span>Pitch fee</span><strong>{money(location?.pitchFee)}</strong></div>
         <div><span>Status</span><strong>shown only</strong></div>
       </div>
-      <p className="fine-print">Cost deduction is deliberately left as a placeholder in this first target so Day 0 order and Day 1 collection can be tested first.</p>
+      <p className="fine-print">Cost deduction is deliberately left as a placeholder until trading balance is less fragile.</p>
       <button onClick={() => dispatch({ type: 'CONFIRM_ROUTE' })}>Confirm route and set up stall</button>
     </Card>
   );
@@ -242,13 +238,13 @@ function DisplaySetupScreen({ state, dispatch }) {
   const vanStock = getStockByLocation(state.stockBatches, 'van');
   const displayStock = getStockByLocation(state.stockBatches, 'display');
   const reducedStock = getStockByLocation(state.stockBatches, 'reduced-area');
-
+  const displaySummary = getDisplayZoneSummary(state.stockBatches);
   return (
     <div className="screen-grid">
       <Card>
         <p className="eyebrow">Display Setup</p>
-        <h2>Tray-slot placeholder</h2>
-        <p className="muted">No drag-and-drop. Buttons only. Zone capacity scoring comes in the next implementation step.</p>
+        <h2>Tray-slot display</h2>
+        <p className="muted">Still no drag-and-drop. Buttons only. Visible batches now produce a simple display rating.</p>
         <div className="display-zones">
           {DISPLAY_ZONES.map((zone) => (
             <div className="zone" key={zone.id}>
@@ -262,10 +258,16 @@ function DisplaySetupScreen({ state, dispatch }) {
       </Card>
       <Card>
         <h2>Visible Stall</h2>
+        <div className="totals">
+          <div><span>Display slots</span><strong>{displaySummary.usedSlots} / {displaySummary.zoneCapacity}</strong></div>
+          <div><span>Rating</span><strong>{displaySummary.rating}</strong></div>
+          <div><span>Score</span><strong>{displaySummary.score}</strong></div>
+        </div>
+        {displaySummary.notes.map((note) => <p key={note} className="fine-print">• {note}</p>)}
         <StockList title="Display" batches={displayStock} emptyText="Nothing displayed yet." actionLabel="Reduce" actionType="MOVE_TO_REDUCED" dispatch={dispatch} />
-        <StockList title="Reduced area" batches={reducedStock} emptyText="No reduced stock." actionLabel="Return to van" actionType="UNLOAD_TO_HOME" dispatch={dispatch} />
+        <StockList title="Reduced area" batches={reducedStock} emptyText="No reduced stock." actionLabel="Return home" actionType="UNLOAD_TO_HOME" dispatch={dispatch} />
         <div className="button-row">
-          <button onClick={() => dispatch({ type: 'ADVANCE_PHASE' })}>Open trading placeholder</button>
+          <button onClick={() => dispatch({ type: 'ADVANCE_PHASE' })}>Open trading</button>
           <button className="secondary" onClick={() => dispatch({ type: 'RETURN_DISPLAY_TO_VAN' })}>Return display to van</button>
         </div>
       </Card>
@@ -273,20 +275,41 @@ function DisplaySetupScreen({ state, dispatch }) {
   );
 }
 
-function TradingScreen({ dispatch }) {
+function TradingScreen({ state, dispatch }) {
+  const displaySummary = getDisplayZoneSummary(state.stockBatches);
   return (
-    <Card>
-      <p className="eyebrow">Trading Day</p>
-      <h2>Customer simulation placeholder</h2>
-      <p>This first implementation target stops short of passive sales and special request scoring. The phase exists so the day can complete and exports can be tested.</p>
-      <ul>
-        <li>Passive customers: placeholder</li>
-        <li>Special requests: data exists, scoring not wired yet</li>
-        <li>Condition pressure: placeholder</li>
-        <li>Display score: placeholder</li>
-      </ul>
-      <button onClick={() => dispatch({ type: 'END_TRADING_DAY' })}>End trading day</button>
-    </Card>
+    <div className="screen-grid">
+      <Card>
+        <p className="eyebrow">Trading Day</p>
+        <h2>Passive customer waves</h2>
+        <p>Each wave generates a few location-weighted customers. They buy visible stock if tags, display, condition, and price feel good enough.</p>
+        <div className="totals">
+          <div><span>Next wave</span><strong>{(state.tradingWaveIndex ?? 0) + 1}</strong></div>
+          <div><span>Display</span><strong>{displaySummary.rating}</strong></div>
+          <div><span>Visible batches</span><strong>{displaySummary.usedSlots}</strong></div>
+        </div>
+        <div className="button-row">
+          <button disabled={(state.tradingWaveIndex ?? 0) >= 4} onClick={() => dispatch({ type: 'RUN_CUSTOMER_WAVE' })}>Simulate customer wave</button>
+          <button className="secondary" onClick={() => dispatch({ type: 'END_TRADING_DAY' })}>End trading day</button>
+        </div>
+      </Card>
+      <Card>
+        <h2>Trading Log</h2>
+        {state.tradingLog.length === 0 ? <p className="muted">No waves simulated yet.</p> : (
+          <div className="stack">
+            {state.tradingLog.map((wave, index) => (
+              <article className="row-card column-card" key={`${wave.wave}-${index}`}>
+                <div>
+                  <strong>{wave.wave} · {money(wave.revenue)} revenue · Display {wave.displayRating}</strong>
+                  {wave.sales.map((sale, saleIndex) => <p className="fine-print" key={`${sale.customerName}-${saleIndex}`}>{sale.customerName} bought {sale.quantity} × {sale.plantName}: {sale.reason}</p>)}
+                  {wave.missedDemand.map((note) => <p className="fine-print" key={note}>Missed: {note}</p>)}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
   );
 }
 
@@ -295,9 +318,16 @@ function DailySummary({ state, dispatch }) {
   return (
     <Card>
       <p className="eyebrow">Daily Summary</p>
-      <h2>Day {state.currentDay} report placeholder</h2>
+      <h2>Day {state.currentDay} report</h2>
       <p>{latest?.note ?? 'No report generated yet.'}</p>
-      <p className="muted">Sales, missed demand, request outcomes, condition changes, and notebook updates are placeholders for the next pass.</p>
+      {latest && (
+        <div className="totals">
+          <div><span>Revenue</span><strong>{money(latest.revenue)}</strong></div>
+          <div><span>Sales</span><strong>{latest.salesCount}</strong></div>
+          <div><span>Missed demand</span><strong>{latest.missedCount}</strong></div>
+        </div>
+      )}
+      <p className="muted">Special request scoring, condition decay, and notebook unlocks remain placeholders.</p>
       <button onClick={() => dispatch({ type: 'START_EVENING_ORDER' })}>Open evening order</button>
     </Card>
   );
@@ -305,15 +335,8 @@ function DailySummary({ state, dispatch }) {
 
 function DebugOverlay({ state, dispatch }) {
   const [exportText, setExportText] = useState('');
-
-  function exportJson() {
-    setExportText(JSON.stringify(createDebugExport(state), null, 2));
-  }
-
-  function exportMarkdown() {
-    setExportText(createMarkdownReport(state));
-  }
-
+  function exportJson() { setExportText(JSON.stringify(createDebugExport(state), null, 2)); }
+  function exportMarkdown() { setExportText(createMarkdownReport(state)); }
   return (
     <aside className="debug-panel">
       <h2>Debug / Admin</h2>
@@ -358,7 +381,7 @@ function PhaseRenderer({ state, dispatch }) {
     case PHASES.DISPLAY_SETUP:
       return <DisplaySetupScreen state={state} dispatch={dispatch} />;
     case PHASES.TRADING:
-      return <TradingScreen dispatch={dispatch} />;
+      return <TradingScreen state={state} dispatch={dispatch} />;
     case PHASES.DAILY_SUMMARY:
       return <DailySummary state={state} dispatch={dispatch} />;
     case PHASES.WEEKLY_SUMMARY:
@@ -371,7 +394,6 @@ function PhaseRenderer({ state, dispatch }) {
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const location = useMemo(() => locationById[state.selectedLocationId], [state.selectedLocationId]);
-
   return (
     <div className="app-shell">
       <HeaderStatus state={state} />
