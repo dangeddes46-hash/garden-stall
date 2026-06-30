@@ -6,7 +6,7 @@ Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`v0.1-special-requests`
+`v0.1-condition-pressure`
 
 ## Current Source of Truth
 
@@ -62,11 +62,13 @@ Implemented:
 - passive customer wave simulation with sales, revenue, missed demand, and trading log
 - special request generation and scored recommendations against visible stock
 - request log with outcome, revenue, reason, warning context, and queued notebook reward notes
+- visible-stock watering action during display setup and trading
+- end-of-day condition pressure based on display exposure, moisture, plant risk, and weather stress
+- condition change reporting in daily summary, JSON export, and Markdown debug report
 - debug/admin panel with cash tools, phase jump, next-day jump, reset, JSON export, and Markdown report export
 
 Still placeholder:
 
-- condition degradation
 - full zone-specific display placement
 - detailed weekly summary
 - full notebook unlock behaviour
@@ -75,17 +77,17 @@ Still placeholder:
 
 ## Current Priority
 
-Run the `/prototype/` app locally after pulling latest changes, confirm reduced stock return controls and special request scoring behave sensibly, then implement condition degradation as the next narrow target.
+Run the `/prototype/` app locally after pulling latest changes, confirm watering and condition changes behave sensibly, then implement full zone-specific display placement as the next narrow target.
 
 ## Recommended Next Actions
 
 1. Run `git pull`, then `cd prototype && npm run dev` locally.
 2. Reset the prototype from the debug panel.
-3. Confirm reduced stock can return to display or van, but not home.
-4. Simulate passive waves and generate special requests during trading.
-5. Recommend visible stock to special request customers and review outcome/reason text.
-6. Tune special request outcome thresholds or request data if outcomes feel too generous or too harsh.
-7. Implement condition degradation next.
+3. Put fragile/thirsty stock on display, skip watering, and end the trading day.
+4. Confirm moisture/condition changes appear in the daily summary.
+5. Repeat with watering before ending the day and compare condition results.
+6. Tune condition pressure if changes feel too harsh or too invisible.
+7. Implement full zone-specific display placement next.
 
 ## Known Risks
 
@@ -93,6 +95,7 @@ Run the `/prototype/` app locally after pulling latest changes, confirm reduced 
 - Batch wholesale costs are rough estimates after moving to larger physical tray quantities.
 - Passive customer scoring is deliberately simple and may need quick tuning.
 - Special request scoring currently uses known good/acceptable/poor/bad plant lists, not deeper explanation logic.
+- Condition pressure is intentionally readable and deterministic; it may need tuning after local playtest.
 - Display placement is still zone-light: it enforces total display slots but does not yet assign stock to individual front table/floor/reduced zones.
 - Real-time trading should remain a testable wave/timer system first, with pauseable menus and strong debug controls.
 - Daily and weekly summaries must explain outcomes clearly or the loop will feel opaque.
