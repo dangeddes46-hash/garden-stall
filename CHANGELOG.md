@@ -1,5 +1,39 @@
 # Changelog — The Garden Stall
 
+## 2026-06-29 — Tray health expanders and individual watering
+
+Reworked the stock UI and health model after playtest feedback showed that identical trays cannot safely stack because each tray develops its own health profile.
+
+Added:
+
+- `prototype/src/systems/healthProfileSystem.js`
+- small prototype version tag in the top header
+- per-plant health records inside each new tray/pot batch
+
+Changed:
+
+- Current version is now `0.1.6-tray-health-expanders`.
+- Plant species no longer stack into one action row.
+- Stock lists now group by species and expand into individual tray/pot cards.
+- Species groups with fewer than 5 batches open by default.
+- Species groups with 5 or more batches start closed.
+- Each tray/pot card shows its own average condition and moisture.
+- Tray average condition/moisture is calculated from active plant records inside that tray.
+- Sales mark individual plant records sold before recalculating the tray average.
+- Feature/loose potted plants are split into individual stock batches during collection.
+- Watering is per tray/pot, not global visible-stock watering.
+- Watering the same tray/pot again can set active plants to `waterlogged`.
+- `waterlogged` status is recorded but does not have a negative gameplay effect yet.
+- The Current Stall panel is visible during trading so progressive drying can be checked before end-of-day.
+
+Still not added:
+
+- waterlogged gameplay penalties/effects
+- full zone-specific placement
+- full notebook unlock behaviour
+- staff implementation
+- final art dependency
+
 ## 2026-06-29 — Stacked stock lists and progressive drying
 
 Improved stock presentation and moved condition pressure from a single end-of-day surprise into visible trading-wave ticks.
