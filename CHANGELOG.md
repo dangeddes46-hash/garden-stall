@@ -1,5 +1,30 @@
 # Changelog — The Garden Stall
 
+## 2026-06-29 — Stacked stock lists and progressive drying
+
+Improved stock presentation and moved condition pressure from a single end-of-day surprise into visible trading-wave ticks.
+
+Added:
+
+- `prototype/src/systems/stockGroupingSystem.js`
+
+Changed:
+
+- Matching physical tray batches now stack into one visible row in home stock, van stock, display stock, reduced stock, and special request recommendation lists.
+- Stacked stock rows still preserve the underlying one-tray-per-record model.
+- `Load one`, `Unload one`, `Display one`, `Reduce one`, and `Recommend one` move or use one physical tray from the stack.
+- Simulating a customer wave now applies a light moisture/condition tick after the sales pass.
+- Wave condition changes appear directly in the trading log.
+- End-of-day condition pressure remains as a smaller wrap-up and packdown step.
+- Condition reports now include timing such as `wave-1` or `end-of-day`.
+
+Still not added:
+
+- full zone-specific placement
+- full notebook unlock behaviour
+- staff implementation
+- final art dependency
+
 ## 2026-06-29 — Tray atomicity, packdown, and tomato drying fix
 
 Corrected stock handling so physical trays are the atomic unit for collection, loading, display, and end-of-day carryover.
