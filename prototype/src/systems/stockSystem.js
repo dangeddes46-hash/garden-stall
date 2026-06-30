@@ -70,6 +70,21 @@ export function resetDisplayToVan(stockBatches) {
   });
 }
 
+export function packUnsoldTradingStockHome(stockBatches) {
+  let packedCount = 0;
+  const nextStock = stockBatches.map((batch) => {
+    if (!['display', 'reduced-area', 'van'].includes(batch.location) || batch.quantity <= 0) return batch;
+    packedCount += 1;
+    return {
+      ...batch,
+      location: 'home',
+      zoneId: null
+    };
+  });
+
+  return { stockBatches: nextStock, packedCount };
+}
+
 export function applySaleToBatch(stockBatches, batchId, quantitySold) {
   return stockBatches.map((batch) => {
     if (batch.id !== batchId) return batch;
