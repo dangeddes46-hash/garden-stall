@@ -49,6 +49,10 @@ export function createMarkdownReport(state) {
     ? state.dailyReports.at(-1).pricingSummary.notes.map((note) => `- ${note}`).join('\n')
     : '- No pricing summary yet';
 
+  const notebookLines = state.notebook?.discoveries?.length
+    ? state.notebook.discoveries.map((entry) => `- ${entry.title} (${entry.category}, Day ${entry.discoveredDay}): ${entry.text}`).join('\n')
+    : '- No notebook discoveries yet';
+
   return `# Garden Stall Prototype 0.1 Debug Report\n\n` +
     `Generated: ${new Date().toISOString()}\n\n` +
     `## Current State\n\n` +
@@ -60,6 +64,7 @@ export function createMarkdownReport(state) {
     `## Stock Batches\n\n${stockLines}\n\n` +
     `## Special Requests\n\n${requestLines}\n\n` +
     `## Pricing\n\n${pricingLines}\n\n` +
+    `## Notebook\n\n${notebookLines}\n\n` +
     `## Condition Changes\n\n${conditionLines}\n\n` +
     `## Debug Log\n\n${state.debugLog.map((entry) => `- ${entry}`).join('\n') || '- No debug actions yet'}\n`;
 }
