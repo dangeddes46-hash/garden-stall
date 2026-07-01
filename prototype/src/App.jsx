@@ -335,8 +335,7 @@ function ZoneUsagePanel({ displaySummary }) {
       ))}
     </div>
   );
-}
-
+}\n
 function DisplaySetupScreen({ state, dispatch }) {
   const vanStock = getStockByLocation(state.stockBatches, 'van');
   const displayStock = getStockByLocation(state.stockBatches, 'display');
@@ -461,7 +460,7 @@ function TradingScreen({ state, dispatch }) {
             renderExtraActions={(batch) => (
               <>
                 <ZonePlacementButtons batch={batch} dispatch={dispatch} includeReduced />
-                <button className="secondary" onClick={() => dispatch({ type: 'RETURN_DISPLAY_TO_VAN' })}>Van</button>
+                <button className="secondary" onClick={() => dispatch({ type: 'RETURN_BATCH_TO_VAN', batchId: batch.id })}>Van</button>
               </>
             )}
           />
