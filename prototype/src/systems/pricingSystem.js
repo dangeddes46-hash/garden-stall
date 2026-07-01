@@ -43,7 +43,7 @@ export function applyPriceBand(batch, priceBand) {
     baseRetailPrice,
     priceBand,
     unitRetailPrice: calculateUnitPrice(baseRetailPrice, priceBand),
-    reduced: priceBand === 'reduced' ? true : batch.reduced
+    reduced: priceBand === 'reduced'
   };
 }
 
