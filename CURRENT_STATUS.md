@@ -6,7 +6,7 @@ Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`0.1.8-pricing-controls`
+`0.1.9-notebook-feedback`
 
 ## Current Source of Truth
 
@@ -84,33 +84,38 @@ Implemented:
 - special request generation and scored recommendations against visible stock
 - special request sales now use the per-plant sale helper and record price band/unit price
 - request log with outcome, revenue, reason, warning context, price info, and queued notebook reward notes
+- first-pass notebook discovery system based on observed daily outcomes
+- notebook discoveries for display zones, pricing, drying, requests, and missed demand
+- side-panel notebook grouped by category
+- daily summary shows newly unlocked notebook entries and why they unlocked
+- notebook entries included in JSON and Markdown debug exports
 - end-of-day condition wrap-up based on display exposure, moisture, plant risk, and weather stress
-- condition and pricing summaries in daily report, JSON export, and Markdown debug report
+- condition, pricing, and notebook summaries in daily report, JSON export, and Markdown debug report
 - debug/admin panel with cash tools, phase jump, next-day jump, reset, JSON export, and Markdown report export
 
 Still placeholder:
 
 - waterlogged effect on condition/sales
 - detailed weekly summary
-- full notebook unlock behaviour
+- notebook entries are readable feedback only, not skill bonuses yet
 - staff pressure metrics
 - final artwork and visual polish
 
 ## Current Priority
 
-Run the `/prototype/` app locally after pulling latest changes, confirm pricing controls compile and that price band changes affect unit price, customer choice, trading log, and daily pricing notes.
+Run the `/prototype/` app locally after pulling latest changes, confirm notebook discovery unlocks compile and that ending a trading day adds readable notebook feedback from real sales/missed demand/condition events.
 
 ## Recommended Next Actions
 
 1. Run `git pull`, then `cd prototype && npm run dev` locally.
 2. Reset the prototype from the debug panel.
-3. Order a mix of colour/giftable stock, grow-your-own stock, and potted lilies.
-4. Load stock to the van and place it into display zones.
-5. Set one tray to Bargain, one to Normal, one to Premium, and one to Reduced.
-6. Simulate several customer waves.
-7. Confirm sales mention zone, price band, and unit price.
-8. Confirm price notes appear when premium pricing discourages sensitive buyers.
-9. End the day and confirm daily pricing notes appear.
+3. Order mixed stock, collect, load the van, and place into several display zones.
+4. Set one tray to Bargain, one to Premium, and move one weaker tray to Reduced Area.
+5. Simulate several customer waves and answer at least one special request.
+6. End the day.
+7. Confirm the daily summary shows notebook feedback and new entries.
+8. Confirm the side-panel Notebook shows entries grouped by Display, Pricing, Condition, and Customers as applicable.
+9. Export Markdown and confirm notebook entries appear in the report.
 
 ## Known Risks
 
@@ -118,6 +123,8 @@ Run the `/prototype/` app locally after pulling latest changes, confirm pricing 
 - Batch wholesale costs are rough estimates after moving to larger physical tray quantities.
 - Passive customer scoring is deliberately simple and may need quick tuning.
 - Price modifiers are first-pass and may need quick balancing.
+- Notebook discovery rules are deliberately simple and may need quick tuning after playtest.
+- Notebook entries currently provide readable feedback only; they do not yet unlock skill bonuses.
 - Special request scoring currently uses known good/acceptable/poor/bad plant lists, not deeper explanation logic.
 - Progressive condition pressure is intentionally readable and deterministic; it may need tuning after local playtest.
 - `waterlogged` is recorded but has no negative gameplay effect yet.
