@@ -1,5 +1,6 @@
 import { VAN_LOAD_LIMITS } from '../data/vanCapacity.js';
 import { markUnitsSold } from './healthProfileSystem.js';
+import { applyPriceBand } from './pricingSystem.js';
 
 export function getStockByLocation(stockBatches, location) {
   return stockBatches.filter((batch) => batch.location === location && batch.quantity > 0);
@@ -58,6 +59,13 @@ export function moveStockBatch(stockBatches, batchId, nextLocation, zoneId = nul
       zoneId: targetZoneId,
       reduced: nextLocation === 'reduced-area' ? true : batch.reduced
     };
+  });
+}
+
+export function updateStockBatchPriceBand(stockBatches, batchId, priceBand) {
+  return stockBatches.map((batch) => {
+    if (batch.id !== batchId) return batch;
+    return applyPriceBand(batch, priceBand);
   });
 }
 
