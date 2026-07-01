@@ -335,7 +335,8 @@ function ZoneUsagePanel({ displaySummary }) {
       ))}
     </div>
   );
-}\n
+}
+
 function DisplaySetupScreen({ state, dispatch }) {
   const vanStock = getStockByLocation(state.stockBatches, 'van');
   const displayStock = getStockByLocation(state.stockBatches, 'display');
