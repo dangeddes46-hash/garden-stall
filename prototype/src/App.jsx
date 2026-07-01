@@ -40,7 +40,7 @@ function HeaderStatus({ state }) {
         <div><span>Day</span><strong>{state.currentDay}</strong></div>
         <div><span>Phase</span><strong>{PHASE_LABELS[state.phase]}</strong></div>
         <div><span>Cash</span><strong>{money(state.cash)}</strong></div>
-        <div><span>Stock Batches</span><strong>{state.stockBatches.length}</strong></div>
+        <div><span>Notebook</span><strong>{state.notebook.discoveries.length}</strong></div>
       </div>
     </header>
   );
@@ -515,6 +515,8 @@ function DailySummary({ state, dispatch }) {
   const latest = state.dailyReports[state.dailyReports.length - 1];
   const conditionEvents = latest?.conditionEvents ?? [];
   const pricingNotes = latest?.pricingSummary?.notes ?? [];
+  const notebookNotes = latest?.notebookNotes ?? [];
+  const notebookDiscoveries = latest?.notebookDiscoveries ?? [];
   return (
     <Card>
       <p className="eyebrow">Daily Summary</p>
@@ -525,6 +527,19 @@ function DailySummary({ state, dispatch }) {
           <div><span>Revenue</span><strong>{money(latest.revenue)}</strong></div>
           <div><span>Passive sales</span><strong>{latest.salesCount}</strong></div>
           <div><span>Requests</span><strong>{latest.requestCount ?? 0}</strong></div>
+        </div>
+      )}
+      <h3>Notebook feedback</h3>
+      {notebookNotes.length === 0 ? <p className="muted">No notebook feedback today.</p> : notebookNotes.map((note) => <p className="fine-print" key={note}>• {note}</p>)}
+      {notebookDiscoveries.length > 0 && (
+        <div className="stack">
+          {notebookDiscoveries.map((entry) => (
+            <article className="row-card column-card notebook-entry" key={entry.id}>
+              <strong>{entry.title}</strong>
+              <p className="fine-print">{entry.category}: {entry.text}</p>
+              <p className="fine-print">Unlocked because: {entry.reason}</p>
+            </article>
+          ))}
         </div>
       )}
       <h3>Pricing notes</h3>
@@ -540,18 +555,55 @@ function DailySummary({ state, dispatch }) {
           ))}
         </div>
       )}
-      <p className="muted">Full notebook unlocks and weekly summary remain placeholders.</p>
       <button onClick={() => dispatch({ type: 'START_EVENING_ORDER' })}>Open evening order</button>
     </Card>
   );
 }
 
+function NotebookPanel({ notebook, latestReport }) {
+  const discoveries = notebook.discoveries ?? [];
+  const latestIds = new Set((latestReport?.notebookDiscoveries ?? []).map((entry) => entry.id));
+  const byCategory = discoveries.reduce((groups, entry) => {
+    const category = entry.category ?? 'General';
+    return {
+      ...groups,
+      [category]: [...(groups[category] ?? []), entry]
+    };
+  }, {});
+
+  return (
+    <section className="notebook-panel">
+      <h2>Notebook</h2>
+      <p className="fine-print">Entries unlock from observed outcomes. They are not permanent bonuses yet; for now they are readable feedback.</p>
+      {discoveries.length === 0 ? <p className="muted">No discoveries yet. Trade a day and end it to review what was learned.</p> : (
+        <div className="stack">
+          {Object.entries(byCategory).map(([category, entries]) => (
+            <div className="notebook-category" key={category}>
+              <h3>{category}</h3>
+              {entries.map((entry) => (
+                <article className={`notebook-mini ${latestIds.has(entry.id) ? 'new-entry' : ''}`} key={entry.id}>
+                  <strong>{entry.title}</strong>
+                  {latestIds.has(entry.id) && <span className="pill ok">new</span>}
+                  <p>{entry.text}</p>
+                  <p className="fine-print">Day {entry.discoveredDay}: {entry.reason}</p>
+                </article>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function DebugOverlay({ state, dispatch }) {
   const [exportText, setExportText] = useState('');
+  const latestReport = state.dailyReports[state.dailyReports.length - 1];
   function exportJson() { setExportText(JSON.stringify(createDebugExport(state), null, 2)); }
   function exportMarkdown() { setExportText(createMarkdownReport(state)); }
   return (
     <aside className="debug-panel">
+      <NotebookPanel notebook={state.notebook} latestReport={latestReport} />
       <h2>Debug / Admin</h2>
       <div className="button-grid">
         <button onClick={() => dispatch({ type: 'DEBUG_ADD_CASH', amount: 10 })}>+£10</button>
