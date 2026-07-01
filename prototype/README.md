@@ -2,7 +2,7 @@
 
 Browser prototype for The Garden Stall.
 
-Current version: `0.1.6-tray-health-expanders`
+Current version: `0.1.7-display-zones`
 
 Current implemented slice:
 
@@ -24,16 +24,19 @@ Current implemented slice:
 - repeated watering can set plants to `waterlogged`; waterlogging has no gameplay effect yet
 - basic home stock / van loadout flow
 - location, route, display, trading, and daily summary screens
-- display slot capacity enforcement per tray batch
-- simple display score and display rating
-- reduced stock returns only to display or van during the trading day
+- display zones: Front Table, Floor / Crates, Feature Spot, and Reduced Area
+- zone capacity enforcement per area
+- van stock can be placed directly into a chosen display zone
+- visible stock can be moved between display zones
+- display score and customer scoring now consider zone fit
+- reduced stock can return to a selected display zone or van during the trading day
 - unsold van/display/reduced stock is packed back home at end of day
 - passive customer wave simulation
 - progressive wave-by-wave moisture/condition ticks during trading
 - current stall remains visible during trading so drying can be checked before end of day
 - special request generation and scored recommendations
 - end-of-day condition wrap-up based on display exposure, moisture, plant risk, and weather stress
-- trading log with sales, revenue, missed demand, request outcomes, recommendation reasons, progressive condition changes, and packdown count
+- trading log with sales, revenue, missed demand, request outcomes, recommendation reasons, sale zone, progressive condition changes, and packdown count
 - debug reset, phase jump, cash tools, next-day jump, JSON export, and Markdown report export
 
 ## Run locally
@@ -57,7 +60,6 @@ This is not yet the full Prototype 0.1 gameplay loop.
 Still placeholder:
 
 - waterlogged effect on condition/sales
-- full zone-specific display placement
 - detailed weekly summary
 - full notebook unlocking
 - staff pressure metrics
