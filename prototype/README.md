@@ -2,7 +2,7 @@
 
 Browser prototype for The Garden Stall.
 
-Current version: `0.1.8-pricing-controls`
+Current version: `0.1.9-notebook-feedback`
 
 Current implemented slice:
 
@@ -22,6 +22,12 @@ Current implemented slice:
 - customer scoring now considers price sensitivity
 - trading logs include sale price band and unit price
 - daily summary includes basic pricing notes
+- first-pass notebook discovery system
+- notebook entries unlock from observed daily outcomes
+- notebook entries currently cover display zones, pricing, drying, requests, and missed demand
+- side-panel notebook groups discoveries by category
+- daily summary shows new notebook entries and the reason they unlocked
+- Markdown debug export includes notebook entries
 - van capacity model: 6 tray spaces plus 6 loose/feature potted plants
 - loading and display movement work one tray/pot batch at a time
 - home, van, display, reduced, and request lists group by plant species and expand into individual trays/pots
@@ -43,7 +49,7 @@ Current implemented slice:
 - special request generation and scored recommendations
 - special request sales now also use the per-plant sale helper
 - end-of-day condition wrap-up based on display exposure, moisture, plant risk, and weather stress
-- trading log with sales, revenue, missed demand, request outcomes, recommendation reasons, sale zone, price band, unit price, progressive condition changes, and packdown count
+- trading log with sales, revenue, missed demand, request outcomes, recommendation reasons, sale zone, price band, unit price, progressive condition changes, notebook discoveries, and packdown count
 - debug reset, phase jump, cash tools, next-day jump, JSON export, and Markdown report export
 
 ## Run locally
@@ -68,7 +74,7 @@ Still placeholder:
 
 - waterlogged effect on condition/sales
 - detailed weekly summary
-- full notebook unlocking
+- notebook entries are readable feedback only, not skill bonuses yet
 - staff pressure metrics
 - final art and visual direction
 
