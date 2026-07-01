@@ -228,6 +228,43 @@ p {
   margin-top: 1rem;
 }
 
+.notebook-panel {
+  border-bottom: 1px solid #dccfb6;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+}
+
+.notebook-category {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.notebook-category h3 {
+  margin-bottom: 0;
+}
+
+.notebook-mini,
+.notebook-entry {
+  background: #f8f1df;
+  border: 1px solid #e1d3b9;
+  border-radius: 16px;
+  padding: 0.75rem;
+}
+
+.notebook-mini.new-entry,
+.notebook-entry {
+  outline: 2px solid #789f5b;
+}
+
+.notebook-mini strong {
+  display: inline-block;
+  margin-right: 0.4rem;
+}
+
+.notebook-mini p {
+  margin-bottom: 0.35rem;
+}
+
 .totals {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
