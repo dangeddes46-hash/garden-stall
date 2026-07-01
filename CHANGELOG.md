@@ -1,5 +1,33 @@
 # Changelog — The Garden Stall
 
+## 2026-07-01 — Notebook feedback
+
+Added a first-pass notebook feedback system so the prototype can explain what the player learned from actual trading outcomes.
+
+Added:
+
+- `prototype/src/systems/notebookSystem.js`
+- first-pass discovery rules for display zones, pricing, drying, requests, and missed demand
+- side-panel Notebook grouped by category
+- new notebook feedback section in the daily summary
+- notebook entries in Markdown debug reports
+
+Changed:
+
+- Current version is now `0.1.9-notebook-feedback`.
+- Ending the trading day now builds a daily report, evaluates it for discoveries, and stores only newly unlocked notebook entries.
+- Daily summary shows new notebook entries and why they unlocked.
+- Header status now shows notebook entry count instead of stock batch count.
+- Notebook discoveries are readable feedback only for now; they do not yet unlock skills or bonuses.
+
+Still not added:
+
+- waterlogged gameplay penalties/effects
+- detailed weekly summary
+- notebook skill bonuses
+- staff implementation
+- final art dependency
+
 ## 2026-07-01 — Pricing controls
 
 Added per-tray/per-pot price bands so merchandising decisions now include both placement and price.
