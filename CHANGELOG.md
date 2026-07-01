@@ -1,5 +1,62 @@
 # Changelog — The Garden Stall
 
+## 2026-07-01 — Pricing controls
+
+Added per-tray/per-pot price bands so merchandising decisions now include both placement and price.
+
+Added:
+
+- `prototype/src/systems/pricingSystem.js`
+- base retail price tracking on new stock batches
+- tray-card price controls for Bargain, Normal, Premium, and Reduced
+- pricing notes in the daily summary
+
+Changed:
+
+- Current version is now `0.1.8-pricing-controls`.
+- Price band changes update each batch's current unit retail price from its base retail price.
+- Passive customer scoring now considers price sensitivity.
+- Bargain pricing helps value-sensitive buyers.
+- Premium pricing can discourage price-sensitive buyers.
+- Reduced pricing is tied into clearance/bargain behaviour.
+- Passive sales now record price band and unit price.
+- Special-request sales now use the per-plant sale helper and record price band/unit price.
+- Markdown debug reports include pricing information.
+
+Still not added:
+
+- waterlogged gameplay penalties/effects
+- detailed weekly summary
+- full notebook unlock behaviour
+- staff implementation
+- final art dependency
+
+## 2026-07-01 — Display zones
+
+Reworked display setup from one broad display area into explicit merchandising zones.
+
+Changed:
+
+- Current version became `0.1.7-display-zones`.
+- Added Front Table, Floor / Crates, Feature Spot, and Reduced Area as display zones.
+- Each zone has its own capacity.
+- Van stock can be placed directly into a selected zone.
+- Visible stock can move between display zones.
+- Display score considers zone fit as well as fullness, colour, giftability, tired stock, and reduced-stock pressure.
+- Customer passive-wave scoring considers zone fit for each candidate batch.
+- Trading log records the sale zone for bought stock.
+- Reduced stock can return to a selected display zone or van during trading-day setup.
+- Display zone is included in Markdown debug reports.
+
+Still not added:
+
+- pricing controls
+- waterlogged gameplay penalties/effects
+- detailed weekly summary
+- full notebook unlock behaviour
+- staff implementation
+- final art dependency
+
 ## 2026-06-29 — Tray health expanders and individual watering
 
 Reworked the stock UI and health model after playtest feedback showed that identical trays cannot safely stack because each tray develops its own health profile.
