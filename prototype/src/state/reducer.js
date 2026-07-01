@@ -6,6 +6,7 @@ import { simulateCustomerWave } from '../systems/customerSystem.js';
 import { canPlaceBatchInDisplayZone, getDisplayZoneSummary } from '../systems/displaySystem.js';
 import { pickSpecialRequest, scoreSpecialRequest } from '../systems/requestSystem.js';
 import { summarizePricingFromTradingLog } from '../systems/pricingSystem.js';
+import { buildNotebookDiscoveriesForDay, createNotebookDailyNotes, mergeNotebookDiscoveries } from '../systems/notebookSystem.js';
 import { applyEndOfDayConditionPressure, applyTradingWaveConditionPressure, waterStockBatch } from '../systems/conditionSystem.js';
 import { initialState } from './initialState.js';
 
@@ -193,35 +194,42 @@ export function reducer(state, action) {
       const conditionResult = applyEndOfDayConditionPressure(state.stockBatches, state.selectedWeather);
       const conditionEvents = [...conditionResult.conditionEvents, ...(state.conditionLog ?? [])];
       const displaySummary = getDisplayZoneSummary(conditionResult.stockBatches);
+      const dailyReport = {
+        day: state.currentDay,
+        cash: state.cash,
+        locationId: state.selectedLocationId,
+        revenue: revenue + requestRevenue,
+        passiveRevenue: revenue,
+        requestRevenue,
+        salesCount,
+        requestCount: state.requestLog.length,
+        missedCount,
+        tradingLog: state.tradingLog,
+        requestLog: state.requestLog,
+        conditionEvents,
+        pricingSummary,
+        zoneUsage: displaySummary.zoneUsage
+      };
+      const discovered = buildNotebookDiscoveriesForDay(dailyReport);
+      const notebook = mergeNotebookDiscoveries(state.notebook, discovered, state.currentDay);
+      const notebookNotes = createNotebookDailyNotes(dailyReport, notebook.lastDiscoveries ?? []);
       const packdown = packUnsoldTradingStockHome(conditionResult.stockBatches);
+      const finalReport = {
+        ...dailyReport,
+        packedCount: packdown.packedCount,
+        notebookDiscoveries: notebook.lastDiscoveries ?? [],
+        notebookNotes,
+        note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionEvents.length} condition changes, ${packdown.packedCount} unsold tray batches packed home, ${(notebook.lastDiscoveries ?? []).length} new notebook entries.`
+      };
       return log({
         ...state,
         stockBatches: packdown.stockBatches,
         conditionLog: conditionEvents,
+        notebook,
         activeRequest: null,
         phase: PHASES.DAILY_SUMMARY,
-        dailyReports: [
-          ...state.dailyReports,
-          {
-            day: state.currentDay,
-            cash: state.cash,
-            locationId: state.selectedLocationId,
-            revenue: revenue + requestRevenue,
-            passiveRevenue: revenue,
-            requestRevenue,
-            salesCount,
-            requestCount: state.requestLog.length,
-            missedCount,
-            packedCount: packdown.packedCount,
-            tradingLog: state.tradingLog,
-            requestLog: state.requestLog,
-            conditionEvents,
-            pricingSummary,
-            zoneUsage: displaySummary.zoneUsage,
-            note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionEvents.length} condition changes, ${packdown.packedCount} unsold tray batches packed home.`
-          }
-        ]
-      }, `Ended trading day: ${packdown.packedCount} unsold tray batches packed home.`);
+        dailyReports: [...state.dailyReports, finalReport]
+      }, `Ended trading day: ${packdown.packedCount} unsold tray batches packed home, ${(notebook.lastDiscoveries ?? []).length} new notebook entries.`);
     }
 
     case 'START_EVENING_ORDER':
