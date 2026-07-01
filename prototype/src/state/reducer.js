@@ -3,7 +3,7 @@ import { weekDayByNumber } from '../data/weekScript.js';
 import { calculateCart, createPendingOrder, createStockBatchesFromOrder } from '../systems/orderSystem.js';
 import { canLoadBatchToVan, moveStockBatch, packUnsoldTradingStockHome, resetDisplayToVan } from '../systems/stockSystem.js';
 import { simulateCustomerWave } from '../systems/customerSystem.js';
-import { canPlaceBatchInDisplayZone } from '../systems/displaySystem.js';
+import { canPlaceBatchInDisplayZone, getDisplayZoneSummary } from '../systems/displaySystem.js';
 import { pickSpecialRequest, scoreSpecialRequest } from '../systems/requestSystem.js';
 import { applyEndOfDayConditionPressure, applyTradingWaveConditionPressure, waterStockBatch } from '../systems/conditionSystem.js';
 import { initialState } from './initialState.js';
@@ -129,6 +129,9 @@ export function reducer(state, action) {
     case 'RETURN_REDUCED_TO_VAN':
       return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'van') }, 'Returned reduced tray batch to van.');
 
+    case 'RETURN_BATCH_TO_VAN':
+      return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'van') }, 'Returned one tray batch to van.');
+
     case 'RETURN_DISPLAY_TO_VAN':
       return log({ ...state, stockBatches: resetDisplayToVan(state.stockBatches) }, 'Returned display stock to van.');
 
@@ -180,6 +183,7 @@ export function reducer(state, action) {
       const missedCount = state.tradingLog.reduce((sum, wave) => sum + (wave.missedDemand?.length ?? 0), 0);
       const conditionResult = applyEndOfDayConditionPressure(state.stockBatches, state.selectedWeather);
       const conditionEvents = [...conditionResult.conditionEvents, ...(state.conditionLog ?? [])];
+      const displaySummary = getDisplayZoneSummary(conditionResult.stockBatches);
       const packdown = packUnsoldTradingStockHome(conditionResult.stockBatches);
       return log({
         ...state,
@@ -203,7 +207,7 @@ export function reducer(state, action) {
             tradingLog: state.tradingLog,
             requestLog: state.requestLog,
             conditionEvents,
-            zoneUsage: conditionResult.zoneUsage,
+            zoneUsage: displaySummary.zoneUsage,
             note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionEvents.length} condition changes, ${packdown.packedCount} unsold tray batches packed home.`
           }
         ]
