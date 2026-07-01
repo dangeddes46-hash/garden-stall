@@ -1,5 +1,6 @@
 import { specialRequests } from '../data/specialRequests.js';
 import { plantById } from '../data/plants.js';
+import { applySaleToBatch } from './stockSystem.js';
 
 const outcomeRank = {
   perfect: 5,
@@ -56,17 +57,9 @@ export function scoreSpecialRequest({ state, request, batchId }) {
   const shouldSell = outcomeRank[outcome] >= outcomeRank.acceptable;
   const saleQuantity = shouldSell ? 1 : 0;
   const revenue = saleQuantity * batch.unitRetailPrice;
-
-  const stockBatches = state.stockBatches.map((item) => {
-    if (item.id !== batchId || saleQuantity === 0) return item;
-    const remaining = Math.max(0, item.quantity - saleQuantity);
-    return {
-      ...item,
-      quantity: remaining,
-      quantitySold: item.quantitySold + saleQuantity,
-      location: remaining <= 0 ? 'sold' : item.location
-    };
-  });
+  const stockBatches = saleQuantity > 0
+    ? applySaleToBatch(state.stockBatches, batchId, saleQuantity)
+    : state.stockBatches;
 
   return {
     stockBatches,
@@ -77,6 +70,8 @@ export function scoreSpecialRequest({ state, request, batchId }) {
       plantName: plant.displayName,
       outcome,
       revenue,
+      unitPrice: batch.unitRetailPrice,
+      priceBand: batch.priceBand,
       reason: reasonForOutcome(outcome, plant, request),
       notebookRewards: outcomeRank[outcome] >= outcomeRank.good ? request.notebookRewards ?? [] : [],
       warning: request.requiredWarnings?.[0] ?? null
