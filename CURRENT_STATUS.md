@@ -6,7 +6,7 @@ Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`0.1.6-tray-health-expanders`
+`0.1.7-display-zones`
 
 ## Current Source of Truth
 
@@ -66,9 +66,14 @@ Implemented:
 - repeated watering can set plant moisture to `waterlogged`; waterlogging has no gameplay effect yet
 - van capacity model: 6 tray spaces plus 6 loose/feature potted plants
 - location, van loadout, route, display, trading, and daily summary screens
-- display slot capacity enforcement per tray batch
-- simple display score and display rating
-- reduced stock can now return only to display or van during trading-day setup
+- display zones: Front Table, Floor / Crates, Feature Spot, and Reduced Area
+- zone capacity enforcement per area
+- van stock can be placed directly into a selected display zone
+- visible stock can move between display zones
+- display score considers zone fit as well as fullness, colour, giftability, tired stock, and reduced-stock pressure
+- customer passive-wave scoring considers zone fit for each candidate batch
+- trading log records the sale zone for bought stock
+- reduced stock can return to a selected display zone or van during trading-day setup
 - unsold van/display/reduced stock is automatically packed back home at end of day
 - passive customer wave simulation with sales, revenue, missed demand, and trading log
 - progressive wave-by-wave moisture/condition pressure during trading
@@ -82,7 +87,6 @@ Implemented:
 Still placeholder:
 
 - waterlogged effect on condition/sales
-- full zone-specific display placement
 - detailed weekly summary
 - full notebook unlock behaviour
 - staff pressure metrics
@@ -90,19 +94,18 @@ Still placeholder:
 
 ## Current Priority
 
-Run the `/prototype/` app locally after pulling latest changes, confirm expandable species sections, individual tray/pot watering, waterlogged status, and visible progressive drying behave sensibly, then implement full zone-specific display placement as the next narrow target.
+Run the `/prototype/` app locally after pulling latest changes, confirm display-zone placement and zone-aware customer scoring compile and behave sensibly, then tune display zone effects from playtest feedback.
 
 ## Recommended Next Actions
 
 1. Run `git pull`, then `cd prototype && npm run dev` locally.
 2. Reset the prototype from the debug panel.
-3. Order multiple matching tomato trays and collect them.
-4. Confirm tomatoes appear as a species section that expands into individual tray cards.
-5. Confirm fewer than 5 trays open by default and 5 or more start closed.
-6. Place trays on display and confirm each tray can be watered individually.
-7. Water the same tray twice and confirm its average moisture can become `waterlogged`.
-8. Simulate several customer waves and confirm the Current Stall panel shows progressive drying before end of day.
-9. Implement full zone-specific display placement next.
+3. Order a mix of colour/giftable stock, grow-your-own stock, and potted lilies.
+4. Load stock to the van.
+5. Place trays into Front Table, Floor / Crates, Feature Spot, and Reduced Area.
+6. Confirm each zone enforces its own capacity.
+7. Simulate several customer waves and confirm sales mention the zone they came from.
+8. Try moving stock between zones and observe display score/rating changes.
 
 ## Known Risks
 
@@ -112,7 +115,7 @@ Run the `/prototype/` app locally after pulling latest changes, confirm expandab
 - Special request scoring currently uses known good/acceptable/poor/bad plant lists, not deeper explanation logic.
 - Progressive condition pressure is intentionally readable and deterministic; it may need tuning after local playtest.
 - `waterlogged` is recorded but has no negative gameplay effect yet.
-- Display placement is still zone-light: it enforces total display slots but does not yet assign stock to individual front table/floor/reduced zones.
+- Zone scoring is intentionally first-pass and may need balancing.
 - Real-time trading should remain a testable wave/timer system first, with pauseable menus and strong debug controls.
 - Daily and weekly summaries must explain outcomes clearly or the loop will feel opaque.
 - Art direction must not delay systems testing.
