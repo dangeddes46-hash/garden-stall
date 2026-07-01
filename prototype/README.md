@@ -2,7 +2,7 @@
 
 Browser prototype for The Garden Stall.
 
-Current version: `0.1.7-display-zones`
+Current version: `0.1.8-pricing-controls`
 
 Current implemented slice:
 
@@ -16,6 +16,12 @@ Current implemented slice:
 - feature/loose potted plants are split into individual stock batches for individual watering and movement
 - each tray/pot contains per-plant health records
 - tray condition and moisture are calculated from the active plants inside that tray
+- each stock batch stores a base retail price and current unit price
+- per-tray/per-pot price bands: Bargain, Normal, Premium, Reduced
+- price band changes update unit price from the batch's base retail price
+- customer scoring now considers price sensitivity
+- trading logs include sale price band and unit price
+- daily summary includes basic pricing notes
 - van capacity model: 6 tray spaces plus 6 loose/feature potted plants
 - loading and display movement work one tray/pot batch at a time
 - home, van, display, reduced, and request lists group by plant species and expand into individual trays/pots
@@ -35,8 +41,9 @@ Current implemented slice:
 - progressive wave-by-wave moisture/condition ticks during trading
 - current stall remains visible during trading so drying can be checked before end of day
 - special request generation and scored recommendations
+- special request sales now also use the per-plant sale helper
 - end-of-day condition wrap-up based on display exposure, moisture, plant risk, and weather stress
-- trading log with sales, revenue, missed demand, request outcomes, recommendation reasons, sale zone, progressive condition changes, and packdown count
+- trading log with sales, revenue, missed demand, request outcomes, recommendation reasons, sale zone, price band, unit price, progressive condition changes, and packdown count
 - debug reset, phase jump, cash tools, next-day jump, JSON export, and Markdown report export
 
 ## Run locally
