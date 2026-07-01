@@ -1,7 +1,7 @@
 import { PHASES, STARTING_CASH } from '../data/constants.js';
 
 export const initialState = {
-  prototypeVersion: '0.1.8-pricing-controls',
+  prototypeVersion: '0.1.9-notebook-feedback',
   phase: PHASES.DAY0_ORDER,
   currentDay: 0,
   cash: STARTING_CASH,
@@ -13,6 +13,7 @@ export const initialState = {
   dailyReports: [],
   notebook: {
     discoveries: [],
+    lastDiscoveries: [],
     skills: []
   },
   tradingWaveIndex: 0,
