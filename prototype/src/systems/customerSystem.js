@@ -2,7 +2,8 @@ import { archetypeById } from '../data/customerArchetypes.js';
 import { customerSeeds } from '../data/customerSeeds.js';
 import { plantById } from '../data/plants.js';
 import { locationById } from '../data/locations.js';
-import { getDisplaySaleModifier, getDisplayZoneSummary } from './displaySystem.js';
+import { getBatchDisplayZoneId, getBatchZoneSaleModifier, getDisplaySaleModifier, getDisplayZoneSummary } from './displaySystem.js';
+import { applySaleToBatch } from './stockSystem.js';
 
 const waveNames = ['Morning', 'Midday', 'Afternoon', 'Closing'];
 
@@ -54,7 +55,11 @@ function scoreBatchForCustomer(batch, archetype, location, displayModifier) {
     score += archetype.reducedInterest === 'high' ? 3 : -1;
   }
 
-  score += displayModifier;
+  const zoneModifier = getBatchZoneSaleModifier(batch, archetype);
+  if (zoneModifier > 0) reasons.push(`well placed in ${getBatchDisplayZoneId(batch).replace('-', ' ')}`);
+  if (zoneModifier < 0) reasons.push(`less convincing in ${getBatchDisplayZoneId(batch).replace('-', ' ')}`);
+
+  score += displayModifier + zoneModifier;
 
   return {
     score,
@@ -112,16 +117,7 @@ export function simulateCustomerWave(state) {
     const saleQuantity = best.batch.loadType === 'feature-pots' ? 1 : Math.min(3, best.batch.quantity);
     const revenue = saleQuantity * best.batch.unitRetailPrice;
     cashDelta += revenue;
-    stockBatches = stockBatches.map((batch) => {
-      if (batch.id !== best.batch.id) return batch;
-      const remaining = batch.quantity - saleQuantity;
-      return {
-        ...batch,
-        quantity: remaining,
-        quantitySold: batch.quantitySold + saleQuantity,
-        location: remaining <= 0 ? 'sold' : batch.location
-      };
-    });
+    stockBatches = applySaleToBatch(stockBatches, best.batch.id, saleQuantity);
 
     sales.push({
       customerName: seed.displayName,
@@ -130,6 +126,7 @@ export function simulateCustomerWave(state) {
       quantity: saleQuantity,
       revenue,
       score: best.score,
+      zoneId: getBatchDisplayZoneId(best.batch),
       reason: best.reasons[0] ?? 'Good visible match.'
     });
     events.push(`${seed.displayName} bought ${saleQuantity} × ${best.batch.plantName}.`);
