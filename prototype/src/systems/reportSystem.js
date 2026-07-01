@@ -1,5 +1,9 @@
-import { PHASE_LABELS } from '../data/constants.js';
+import { PHASE_LABELS, DISPLAY_ZONES } from '../data/constants.js';
 import { locationById } from '../data/locations.js';
+
+function zoneLabel(zoneId) {
+  return DISPLAY_ZONES.find((zone) => zone.id === zoneId)?.label ?? zoneId ?? 'none';
+}
 
 export function createDebugExport(state) {
   return {
@@ -25,7 +29,7 @@ export function createDebugExport(state) {
 export function createMarkdownReport(state) {
   const locationName = state.selectedLocationId ? locationById[state.selectedLocationId]?.displayName : 'No location selected';
   const stockLines = state.stockBatches.length
-    ? state.stockBatches.map((batch) => `- ${batch.plantName}: ${batch.quantity} units, ${batch.location}, ${batch.condition}, ${batch.moisture}`).join('\n')
+    ? state.stockBatches.map((batch) => `- ${batch.plantName}: ${batch.quantity} units, ${batch.location}, ${zoneLabel(batch.location === 'reduced-area' ? 'reduced-area' : batch.zoneId)}, ${batch.condition}, ${batch.moisture}`).join('\n')
     : '- No stock batches yet';
 
   const orderLines = state.pendingOrders.length
