@@ -9,11 +9,13 @@ import { calculateCart } from './systems/orderSystem.js';
 import { getStockByLocation, getVanLoadSummary } from './systems/stockSystem.js';
 import { groupStockByPlant } from './systems/stockGroupingSystem.js';
 import { getBatchDisplayZoneId, getDisplayZoneSummary } from './systems/displaySystem.js';
+import { PRICE_BAND_DETAILS, describePriceBand } from './systems/pricingSystem.js';
 import { createDebugExport, createMarkdownReport } from './systems/reportSystem.js';
 import { initialState } from './state/initialState.js';
 import { reducer } from './state/reducer.js';
 
 const activeDisplayZones = DISPLAY_ZONES.filter((zone) => zone.id !== 'reduced-area');
+const visiblePriceBands = ['bargain', 'normal', 'premium', 'reduced'];
 
 function money(value) {
   return `£${Number(value || 0).toFixed(2)}`;
@@ -176,6 +178,23 @@ function LocationScreen({ state, dispatch }) {
   );
 }
 
+function PriceButtons({ batch, dispatch }) {
+  return (
+    <div className="price-actions">
+      {visiblePriceBands.map((band) => (
+        <button
+          key={band}
+          className={batch.priceBand === band ? 'secondary' : undefined}
+          title={PRICE_BAND_DETAILS[band]?.note}
+          onClick={() => dispatch({ type: 'SET_PRICE_BAND', batchId: batch.id, priceBand: band })}
+        >
+          {describePriceBand(band)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function ZonePlacementButtons({ batch, dispatch, includeReduced = false, returnFromReduced = false }) {
   return (
     <>
@@ -192,20 +211,21 @@ function ZonePlacementButtons({ batch, dispatch, includeReduced = false, returnF
           {returnFromReduced ? `Return ${zone.label}` : zone.label}
         </button>
       ))}
-      {includeReduced && <button className="secondary" onClick={() => dispatch({ type: 'MOVE_TO_REDUCED', batchId: batch.id })}>Reduced</button>}
+      {includeReduced && <button className="secondary" onClick={() => dispatch({ type: 'MOVE_TO_REDUCED', batchId: batch.id })}>Reduced area</button>}
     </>
   );
 }
 
-function TrayRow({ batch, actionLabel, actionType, allowWater = false, dispatch, extraActions = null }) {
+function TrayRow({ batch, actionLabel, actionType, allowWater = false, allowPricing = true, dispatch, extraActions = null }) {
   const plantCount = batch.unitHealth?.filter((unit) => !unit.sold).length ?? batch.quantity;
   const zoneId = ['display', 'reduced-area'].includes(batch.location) ? getBatchDisplayZoneId(batch) : null;
   return (
     <div className="row-card">
       <div>
-        <strong>{batch.batchLabel ?? 'tray'} · {batch.quantity} left</strong>
-        <p className="fine-print">Average tray health: {batch.condition} · {batch.moisture} · {batch.priceBand}</p>
+        <strong>{batch.batchLabel ?? 'tray'} · {batch.quantity} left · {money(batch.unitRetailPrice)} each</strong>
+        <p className="fine-print">Average tray health: {batch.condition} · {batch.moisture} · {describePriceBand(batch.priceBand)}</p>
         <p className="fine-print">Plant records: {plantCount} active · {batch.quantitySold ?? 0} sold{zoneId ? ` · ${zoneLabel(zoneId)}` : ''}</p>
+        {allowPricing && <PriceButtons batch={batch} dispatch={dispatch} />}
       </div>
       <div className="row-actions wrap-actions">
         {allowWater && <button className="secondary" onClick={() => dispatch({ type: 'WATER_STOCK_BATCH', batchId: batch.id })}>Water tray</button>}
@@ -216,7 +236,7 @@ function TrayRow({ batch, actionLabel, actionType, allowWater = false, dispatch,
   );
 }
 
-function ExpandableStockList({ title, batches, emptyText, actionLabel, actionType, allowWater = false, dispatch, renderExtraActions }) {
+function ExpandableStockList({ title, batches, emptyText, actionLabel, actionType, allowWater = false, allowPricing = true, dispatch, renderExtraActions }) {
   const groups = groupStockByPlant(batches);
   const [openOverrides, setOpenOverrides] = useState({});
 
@@ -247,6 +267,7 @@ function ExpandableStockList({ title, batches, emptyText, actionLabel, actionTyp
                       actionLabel={actionLabel}
                       actionType={actionType}
                       allowWater={allowWater}
+                      allowPricing={allowPricing}
                       dispatch={dispatch}
                       extraActions={renderExtraActions ? renderExtraActions(batch) : null}
                     />
@@ -346,8 +367,8 @@ function DisplaySetupScreen({ state, dispatch }) {
     <div className="screen-grid">
       <Card>
         <p className="eyebrow">Display Setup</p>
-        <h2>Zone placement</h2>
-        <p className="muted">Choose where each tray/pot sits. Zones affect capacity, display score, and customer fit.</p>
+        <h2>Zone placement and pricing</h2>
+        <p className="muted">Choose where each tray/pot sits and set its price band. Bargain helps value buyers; premium needs good stock and placement.</p>
         <ZoneUsagePanel displaySummary={displaySummary} />
         <ExpandableStockList
           title="Van stock"
@@ -405,7 +426,7 @@ function SpecialRequestPanel({ state, dispatch }) {
           <h2>{request.displayName}</h2>
           <p>“{request.customerLine}”</p>
           {request.requiredWarnings?.length > 0 && <p className="fine-print">Warning context: {request.requiredWarnings[0]}</p>}
-          <ExpandableStockList title="Visible recommendations" batches={visibleStock} emptyText="No visible stock is available to recommend." actionLabel="Recommend" actionType="ANSWER_SPECIAL_REQUEST" dispatch={dispatch} />
+          <ExpandableStockList title="Visible recommendations" batches={visibleStock} emptyText="No visible stock is available to recommend." actionLabel="Recommend" actionType="ANSWER_SPECIAL_REQUEST" allowPricing={false} dispatch={dispatch} />
           <button className="secondary" onClick={() => dispatch({ type: 'CANCEL_SPECIAL_REQUEST' })}>Dismiss request</button>
         </>
       )}
@@ -415,7 +436,7 @@ function SpecialRequestPanel({ state, dispatch }) {
           {state.requestLog.map((entry, index) => (
             <article key={`${entry.requestId}-${index}`} className="row-card column-card">
               <strong>{entry.requestName}: {entry.outcome} · {money(entry.revenue)}</strong>
-              <p className="fine-print">Recommended {entry.plantName}. {entry.reason}</p>
+              <p className="fine-print">Recommended {entry.plantName} at {describePriceBand(entry.priceBand ?? 'normal')} price. {entry.reason}</p>
               {entry.notebookRewards?.length > 0 && <p className="fine-print">Notebook reward queued: {entry.notebookRewards.join(', ')}</p>}
             </article>
           ))}
@@ -435,7 +456,7 @@ function TradingScreen({ state, dispatch }) {
         <Card>
           <p className="eyebrow">Trading Day</p>
           <h2>Passive customer waves</h2>
-          <p>Each wave generates location-weighted customers, reads the display zones, then visible stock takes a drying/condition tick.</p>
+          <p>Each wave generates location-weighted customers, reads display zones and prices, then visible stock takes a drying/condition tick.</p>
           <div className="totals">
             <div><span>Next wave</span><strong>{(state.tradingWaveIndex ?? 0) + 1}</strong></div>
             <div><span>Display</span><strong>{displaySummary.rating}</strong></div>
@@ -475,8 +496,9 @@ function TradingScreen({ state, dispatch }) {
                 <article className="row-card column-card" key={`${wave.wave}-${index}`}>
                   <div>
                     <strong>{wave.wave} · {money(wave.revenue)} revenue · Display {wave.displayRating}</strong>
-                    {wave.sales.map((sale, saleIndex) => <p className="fine-print" key={`${sale.customerName}-${saleIndex}`}>{sale.customerName} bought {sale.quantity} × {sale.plantName}{sale.zoneId ? ` from ${zoneLabel(sale.zoneId)}` : ''}: {sale.reason}</p>)}
+                    {wave.sales.map((sale, saleIndex) => <p className="fine-print" key={`${sale.customerName}-${saleIndex}`}>{sale.customerName} bought {sale.quantity} × {sale.plantName}{sale.zoneId ? ` from ${zoneLabel(sale.zoneId)}` : ''} at {describePriceBand(sale.priceBand ?? 'normal')} price ({money(sale.unitPrice)} each): {sale.reason}</p>)}
                     {wave.missedDemand.map((note) => <p className="fine-print" key={note}>Missed: {note}</p>)}
+                    {wave.priceNotes?.map((note) => <p className="fine-print" key={note}>Price note: {note}</p>)}
                     {wave.conditionEvents?.map((event, eventIndex) => <p className="fine-print" key={`${event.batchId}-${eventIndex}`}>Condition: {event.plantName} {event.fromMoisture} → {event.toMoisture}{event.fromCondition !== event.toCondition ? `, ${event.fromCondition} → ${event.toCondition}` : ''}</p>)}
                   </div>
                 </article>
@@ -492,6 +514,7 @@ function TradingScreen({ state, dispatch }) {
 function DailySummary({ state, dispatch }) {
   const latest = state.dailyReports[state.dailyReports.length - 1];
   const conditionEvents = latest?.conditionEvents ?? [];
+  const pricingNotes = latest?.pricingSummary?.notes ?? [];
   return (
     <Card>
       <p className="eyebrow">Daily Summary</p>
@@ -504,6 +527,8 @@ function DailySummary({ state, dispatch }) {
           <div><span>Requests</span><strong>{latest.requestCount ?? 0}</strong></div>
         </div>
       )}
+      <h3>Pricing notes</h3>
+      {pricingNotes.length === 0 ? <p className="muted">No pricing notes today.</p> : pricingNotes.map((note) => <p className="fine-print" key={note}>• {note}</p>)}
       <h3>Condition changes</h3>
       {conditionEvents.length === 0 ? <p className="muted">No stock condition changes today.</p> : (
         <div className="stack">
