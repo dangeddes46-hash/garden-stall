@@ -30,7 +30,7 @@ export const PHASE_LABELS = {
 
 export const PRICE_BANDS = ['bargain', 'normal', 'premium', 'reduced'];
 export const CONDITIONS = ['excellent', 'good', 'tired', 'past-peak', 'unsellable'];
-export const MOISTURE = ['watered', 'damp', 'dry', 'bone-dry'];
+export const MOISTURE = ['waterlogged', 'watered', 'damp', 'dry', 'bone-dry'];
 export const STOCK_LOCATIONS = ['home', 'van', 'display', 'reduced-area', 'sold', 'discarded'];
 
 export const DISPLAY_ZONES = [
@@ -38,13 +38,19 @@ export const DISPLAY_ZONES = [
     id: 'front-table',
     label: 'Front Table',
     capacity: 4,
-    note: 'High visibility. Best for colourful, giftable, or impulse stock.'
+    note: 'High visibility. Best for colourful, giftable, small, or impulse stock.'
   },
   {
-    id: 'floor-space',
-    label: 'Floor Space',
-    capacity: 4,
-    note: 'Rough but useful for lilies, compost, pots, and bulky stock.'
+    id: 'floor-crates',
+    label: 'Floor / Crates',
+    capacity: 6,
+    note: 'Practical space for grow-your-own trays, compost, pots, and larger useful stock.'
+  },
+  {
+    id: 'feature-spot',
+    label: 'Feature Spot',
+    capacity: 2,
+    note: 'Premium attention space for showy potted plants and statement items.'
   },
   {
     id: 'reduced-area',
