@@ -48,13 +48,14 @@ export function canLoadBatchToVan(stockBatches, batchId) {
     && current.featurePots + incoming.featurePots <= VAN_LOAD_LIMITS.featurePots;
 }
 
-export function moveStockBatch(stockBatches, batchId, nextLocation) {
+export function moveStockBatch(stockBatches, batchId, nextLocation, zoneId = null) {
   return stockBatches.map((batch) => {
     if (batch.id !== batchId) return batch;
+    const targetZoneId = nextLocation === 'display' ? zoneId : null;
     return {
       ...batch,
       location: nextLocation,
-      zoneId: nextLocation === 'display' || nextLocation === 'reduced-area' ? batch.zoneId : null,
+      zoneId: targetZoneId,
       reduced: nextLocation === 'reduced-area' ? true : batch.reduced
     };
   });
