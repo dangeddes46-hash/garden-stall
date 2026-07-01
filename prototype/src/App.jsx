@@ -8,13 +8,19 @@ import { weekDayByNumber } from './data/weekScript.js';
 import { calculateCart } from './systems/orderSystem.js';
 import { getStockByLocation, getVanLoadSummary } from './systems/stockSystem.js';
 import { groupStockByPlant } from './systems/stockGroupingSystem.js';
-import { getDisplayZoneSummary } from './systems/displaySystem.js';
+import { getBatchDisplayZoneId, getDisplayZoneSummary } from './systems/displaySystem.js';
 import { createDebugExport, createMarkdownReport } from './systems/reportSystem.js';
 import { initialState } from './state/initialState.js';
 import { reducer } from './state/reducer.js';
 
+const activeDisplayZones = DISPLAY_ZONES.filter((zone) => zone.id !== 'reduced-area');
+
 function money(value) {
   return `£${Number(value || 0).toFixed(2)}`;
+}
+
+function zoneLabel(zoneId) {
+  return DISPLAY_ZONES.find((zone) => zone.id === zoneId)?.label ?? zoneId ?? 'No zone';
 }
 
 function Card({ children, className = '' }) {
@@ -170,14 +176,36 @@ function LocationScreen({ state, dispatch }) {
   );
 }
 
+function ZonePlacementButtons({ batch, dispatch, includeReduced = false, returnFromReduced = false }) {
+  return (
+    <>
+      {activeDisplayZones.map((zone) => (
+        <button
+          key={zone.id}
+          className={getBatchDisplayZoneId(batch) === zone.id ? 'secondary' : undefined}
+          onClick={() => dispatch({
+            type: returnFromReduced ? 'RETURN_REDUCED_TO_DISPLAY' : 'PLACE_ON_DISPLAY',
+            batchId: batch.id,
+            zoneId: zone.id
+          })}
+        >
+          {returnFromReduced ? `Return ${zone.label}` : zone.label}
+        </button>
+      ))}
+      {includeReduced && <button className="secondary" onClick={() => dispatch({ type: 'MOVE_TO_REDUCED', batchId: batch.id })}>Reduced</button>}
+    </>
+  );
+}
+
 function TrayRow({ batch, actionLabel, actionType, allowWater = false, dispatch, extraActions = null }) {
   const plantCount = batch.unitHealth?.filter((unit) => !unit.sold).length ?? batch.quantity;
+  const zoneId = ['display', 'reduced-area'].includes(batch.location) ? getBatchDisplayZoneId(batch) : null;
   return (
     <div className="row-card">
       <div>
         <strong>{batch.batchLabel ?? 'tray'} · {batch.quantity} left</strong>
         <p className="fine-print">Average tray health: {batch.condition} · {batch.moisture} · {batch.priceBand}</p>
-        <p className="fine-print">Plant records: {plantCount} active · {batch.quantitySold ?? 0} sold</p>
+        <p className="fine-print">Plant records: {plantCount} active · {batch.quantitySold ?? 0} sold{zoneId ? ` · ${zoneLabel(zoneId)}` : ''}</p>
       </div>
       <div className="row-actions wrap-actions">
         {allowWater && <button className="secondary" onClick={() => dispatch({ type: 'WATER_STOCK_BATCH', batchId: batch.id })}>Water tray</button>}
@@ -243,7 +271,7 @@ function ReducedStockList({ batches, emptyText, dispatch }) {
       dispatch={dispatch}
       renderExtraActions={(batch) => (
         <>
-          <button onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_DISPLAY', batchId: batch.id })}>Return display</button>
+          <ZonePlacementButtons batch={batch} dispatch={dispatch} returnFromReduced />
           <button className="secondary" onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_VAN', batchId: batch.id })}>Return van</button>
         </>
       )}
@@ -295,6 +323,20 @@ function RouteConfirmScreen({ state, dispatch }) {
   );
 }
 
+function ZoneUsagePanel({ displaySummary }) {
+  return (
+    <div className="display-zones">
+      {displaySummary.zoneUsage.map((zone) => (
+        <div className="zone" key={zone.id}>
+          <strong>{zone.label}</strong>
+          <span>{zone.usedSlots} / {zone.capacity} slots</span>
+          <p>{zone.note}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function DisplaySetupScreen({ state, dispatch }) {
   const vanStock = getStockByLocation(state.stockBatches, 'van');
   const displayStock = getStockByLocation(state.stockBatches, 'display');
@@ -304,18 +346,16 @@ function DisplaySetupScreen({ state, dispatch }) {
     <div className="screen-grid">
       <Card>
         <p className="eyebrow">Display Setup</p>
-        <h2>Tray-slot display</h2>
-        <p className="muted">Species categories expand into individual trays. Fewer than 5 trays open by default; 5 or more start closed.</p>
-        <div className="display-zones">
-          {DISPLAY_ZONES.map((zone) => (
-            <div className="zone" key={zone.id}>
-              <strong>{zone.label}</strong>
-              <span>{zone.capacity} tray slots</span>
-              <p>{zone.note}</p>
-            </div>
-          ))}
-        </div>
-        <ExpandableStockList title="Van stock" batches={vanStock} emptyText="No stock left in van." actionLabel="Display" actionType="PLACE_ON_DISPLAY" dispatch={dispatch} />
+        <h2>Zone placement</h2>
+        <p className="muted">Choose where each tray/pot sits. Zones affect capacity, display score, and customer fit.</p>
+        <ZoneUsagePanel displaySummary={displaySummary} />
+        <ExpandableStockList
+          title="Van stock"
+          batches={vanStock}
+          emptyText="No stock left in van."
+          dispatch={dispatch}
+          renderExtraActions={(batch) => <ZonePlacementButtons batch={batch} dispatch={dispatch} includeReduced />}
+        />
       </Card>
       <Card>
         <h2>Visible Stall</h2>
@@ -325,7 +365,19 @@ function DisplaySetupScreen({ state, dispatch }) {
           <div><span>Score</span><strong>{displaySummary.score}</strong></div>
         </div>
         {displaySummary.notes.map((note) => <p key={note} className="fine-print">• {note}</p>)}
-        <ExpandableStockList title="Display" batches={displayStock} emptyText="Nothing displayed yet." actionLabel="Reduce" actionType="MOVE_TO_REDUCED" allowWater dispatch={dispatch} />
+        <ExpandableStockList
+          title="Display"
+          batches={displayStock}
+          emptyText="Nothing displayed yet."
+          allowWater
+          dispatch={dispatch}
+          renderExtraActions={(batch) => (
+            <>
+              <ZonePlacementButtons batch={batch} dispatch={dispatch} includeReduced />
+              <button className="secondary" onClick={() => dispatch({ type: 'UNLOAD_TO_HOME', batchId: batch.id })}>Home</button>
+            </>
+          )}
+        />
         <ReducedStockList batches={reducedStock} emptyText="No reduced stock." dispatch={dispatch} />
         <div className="button-row">
           <button onClick={() => dispatch({ type: 'ADVANCE_PHASE' })}>Open trading</button>
@@ -383,12 +435,13 @@ function TradingScreen({ state, dispatch }) {
         <Card>
           <p className="eyebrow">Trading Day</p>
           <h2>Passive customer waves</h2>
-          <p>Each wave generates a few location-weighted customers, then visible stock takes a small drying/condition tick.</p>
+          <p>Each wave generates location-weighted customers, reads the display zones, then visible stock takes a drying/condition tick.</p>
           <div className="totals">
             <div><span>Next wave</span><strong>{(state.tradingWaveIndex ?? 0) + 1}</strong></div>
             <div><span>Display</span><strong>{displaySummary.rating}</strong></div>
             <div><span>Visible batches</span><strong>{displaySummary.usedSlots}</strong></div>
           </div>
+          <ZoneUsagePanel displaySummary={displaySummary} />
           <div className="button-row">
             <button disabled={(state.tradingWaveIndex ?? 0) >= 4} onClick={() => dispatch({ type: 'RUN_CUSTOMER_WAVE' })}>Simulate customer wave</button>
             <button className="secondary" onClick={() => dispatch({ type: 'END_TRADING_DAY' })}>End trading day</button>
@@ -399,7 +452,19 @@ function TradingScreen({ state, dispatch }) {
       <div className="stack">
         <Card>
           <h2>Current Stall</h2>
-          <ExpandableStockList title="Display" batches={displayStock} emptyText="Nothing displayed." actionLabel="Reduce" actionType="MOVE_TO_REDUCED" allowWater dispatch={dispatch} />
+          <ExpandableStockList
+            title="Display"
+            batches={displayStock}
+            emptyText="Nothing displayed."
+            allowWater
+            dispatch={dispatch}
+            renderExtraActions={(batch) => (
+              <>
+                <ZonePlacementButtons batch={batch} dispatch={dispatch} includeReduced />
+                <button className="secondary" onClick={() => dispatch({ type: 'RETURN_DISPLAY_TO_VAN' })}>Van</button>
+              </>
+            )}
+          />
           <ReducedStockList batches={reducedStock} emptyText="No reduced stock." dispatch={dispatch} />
         </Card>
         <Card>
@@ -410,7 +475,7 @@ function TradingScreen({ state, dispatch }) {
                 <article className="row-card column-card" key={`${wave.wave}-${index}`}>
                   <div>
                     <strong>{wave.wave} · {money(wave.revenue)} revenue · Display {wave.displayRating}</strong>
-                    {wave.sales.map((sale, saleIndex) => <p className="fine-print" key={`${sale.customerName}-${saleIndex}`}>{sale.customerName} bought {sale.quantity} × {sale.plantName}: {sale.reason}</p>)}
+                    {wave.sales.map((sale, saleIndex) => <p className="fine-print" key={`${sale.customerName}-${saleIndex}`}>{sale.customerName} bought {sale.quantity} × {sale.plantName}{sale.zoneId ? ` from ${zoneLabel(sale.zoneId)}` : ''}: {sale.reason}</p>)}
                     {wave.missedDemand.map((note) => <p className="fine-print" key={note}>Missed: {note}</p>)}
                     {wave.conditionEvents?.map((event, eventIndex) => <p className="fine-print" key={`${event.batchId}-${eventIndex}`}>Condition: {event.plantName} {event.fromMoisture} → {event.toMoisture}{event.fromCondition !== event.toCondition ? `, ${event.fromCondition} → ${event.toCondition}` : ''}</p>)}
                   </div>
