@@ -3,6 +3,7 @@ import { customerSeeds } from '../data/customerSeeds.js';
 import { plantById } from '../data/plants.js';
 import { locationById } from '../data/locations.js';
 import { getBatchDisplayZoneId, getBatchZoneSaleModifier, getDisplaySaleModifier, getDisplayZoneSummary } from './displaySystem.js';
+import { getPriceCustomerModifier, describePriceBand } from './pricingSystem.js';
 import { applySaleToBatch } from './stockSystem.js';
 
 const waveNames = ['Morning', 'Midday', 'Afternoon', 'Closing'];
@@ -28,7 +29,7 @@ function findSeed(archetypeId, waveIndex) {
 
 function scoreBatchForCustomer(batch, archetype, location, displayModifier) {
   const plant = plantById[batch.plantId];
-  if (!plant) return { score: -99, reasons: ['Unknown plant.'] };
+  if (!plant) return { score: -99, reasons: ['Unknown plant.'], priceNote: null };
 
   const reasons = [];
   let score = 0;
@@ -50,20 +51,27 @@ function scoreBatchForCustomer(batch, archetype, location, displayModifier) {
   if (batch.condition === 'excellent') score += 1;
   if (batch.condition === 'tired') score -= 2;
   if (batch.condition === 'past-peak') score -= 4;
-  if (batch.priceBand === 'premium' && archetype.priceSensitivity === 'high') score -= 2;
-  if (batch.priceBand === 'reduced' || batch.reduced || batch.location === 'reduced-area') {
-    score += archetype.reducedInterest === 'high' ? 3 : -1;
-  }
 
   const zoneModifier = getBatchZoneSaleModifier(batch, archetype);
   if (zoneModifier > 0) reasons.push(`well placed in ${getBatchDisplayZoneId(batch).replace('-', ' ')}`);
   if (zoneModifier < 0) reasons.push(`less convincing in ${getBatchDisplayZoneId(batch).replace('-', ' ')}`);
 
-  score += displayModifier + zoneModifier;
+  const priceModifier = getPriceCustomerModifier(batch, archetype);
+  let priceNote = null;
+  if (priceModifier > 0) {
+    reasons.push(`${describePriceBand(batch.priceBand)} price helped`);
+  }
+  if (priceModifier < 0) {
+    priceNote = `${archetype.displayName} hesitated over ${batch.plantName} at ${describePriceBand(batch.priceBand).toLowerCase()} pricing.`;
+    reasons.push(`${describePriceBand(batch.priceBand)} price hurt`);
+  }
+
+  score += displayModifier + zoneModifier + priceModifier;
 
   return {
     score,
-    reasons: reasons.slice(0, 3)
+    reasons: reasons.slice(0, 3),
+    priceNote
   };
 }
 
@@ -76,7 +84,8 @@ export function simulateCustomerWave(state) {
         wave: 'No location',
         events: ['No location selected, so no customers arrived.'],
         sales: [],
-        missedDemand: []
+        missedDemand: [],
+        priceNotes: []
       }
     };
   }
@@ -87,6 +96,7 @@ export function simulateCustomerWave(state) {
   const customersThisWave = Math.min(4, 2 + waveIndex);
   const sales = [];
   const missedDemand = [];
+  const priceNotes = [];
   const events = [];
   let stockBatches = state.stockBatches;
   let cashDelta = 0;
@@ -109,6 +119,10 @@ export function simulateCustomerWave(state) {
     const best = scored[0];
     const threshold = archetype.priceSensitivity === 'high' ? 5 : 4;
 
+    scored.slice(0, 2).forEach((entry) => {
+      if (entry.priceNote && entry.score < threshold) priceNotes.push(entry.priceNote);
+    });
+
     if (!best || best.score < threshold) {
       missedDemand.push(`${seed.displayName} browsed as a ${archetype.displayName}, but nothing felt quite right.`);
       continue;
@@ -124,6 +138,8 @@ export function simulateCustomerWave(state) {
       archetype: archetype.displayName,
       plantName: best.batch.plantName,
       quantity: saleQuantity,
+      unitPrice: best.batch.unitRetailPrice,
+      priceBand: best.batch.priceBand,
       revenue,
       score: best.score,
       zoneId: getBatchDisplayZoneId(best.batch),
@@ -145,6 +161,7 @@ export function simulateCustomerWave(state) {
       events,
       sales,
       missedDemand,
+      priceNotes: [...new Set(priceNotes)].slice(0, 4),
       revenue: cashDelta
     }
   };
