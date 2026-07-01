@@ -6,7 +6,7 @@ Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`0.1.7-display-zones`
+`0.1.8-pricing-controls`
 
 ## Current Source of Truth
 
@@ -59,6 +59,9 @@ Implemented:
 - feature/loose potted plants are split into individual stock batches for individual watering and movement
 - each tray/pot contains per-plant health records
 - tray condition and moisture are calculated from the average active plants inside that tray
+- each new stock batch stores a base retail price and current unit price
+- per-tray/per-pot price bands: Bargain, Normal, Premium, Reduced
+- price band changes update the current unit price from the base retail price
 - loading and display movement operate one physical tray/pot batch at a time
 - home, van, display, reduced, and request recommendation lists group by plant species and expand into individual tray/pot cards
 - species groups with fewer than 5 batches open by default; 5 or more start closed
@@ -71,17 +74,18 @@ Implemented:
 - van stock can be placed directly into a selected display zone
 - visible stock can move between display zones
 - display score considers zone fit as well as fullness, colour, giftability, tired stock, and reduced-stock pressure
-- customer passive-wave scoring considers zone fit for each candidate batch
-- trading log records the sale zone for bought stock
+- customer passive-wave scoring considers zone fit and price sensitivity for each candidate batch
+- trading log records sale zone, price band, and unit price for bought stock
 - reduced stock can return to a selected display zone or van during trading-day setup
 - unsold van/display/reduced stock is automatically packed back home at end of day
-- passive customer wave simulation with sales, revenue, missed demand, and trading log
+- passive customer wave simulation with sales, revenue, missed demand, pricing notes, and trading log
 - progressive wave-by-wave moisture/condition pressure during trading
 - current stall remains visible during trading so drying can be checked before end of day
 - special request generation and scored recommendations against visible stock
-- request log with outcome, revenue, reason, warning context, and queued notebook reward notes
+- special request sales now use the per-plant sale helper and record price band/unit price
+- request log with outcome, revenue, reason, warning context, price info, and queued notebook reward notes
 - end-of-day condition wrap-up based on display exposure, moisture, plant risk, and weather stress
-- condition change reporting in trading log, daily summary, JSON export, and Markdown debug report
+- condition and pricing summaries in daily report, JSON export, and Markdown debug report
 - debug/admin panel with cash tools, phase jump, next-day jump, reset, JSON export, and Markdown report export
 
 Still placeholder:
@@ -94,24 +98,26 @@ Still placeholder:
 
 ## Current Priority
 
-Run the `/prototype/` app locally after pulling latest changes, confirm display-zone placement and zone-aware customer scoring compile and behave sensibly, then tune display zone effects from playtest feedback.
+Run the `/prototype/` app locally after pulling latest changes, confirm pricing controls compile and that price band changes affect unit price, customer choice, trading log, and daily pricing notes.
 
 ## Recommended Next Actions
 
 1. Run `git pull`, then `cd prototype && npm run dev` locally.
 2. Reset the prototype from the debug panel.
 3. Order a mix of colour/giftable stock, grow-your-own stock, and potted lilies.
-4. Load stock to the van.
-5. Place trays into Front Table, Floor / Crates, Feature Spot, and Reduced Area.
-6. Confirm each zone enforces its own capacity.
-7. Simulate several customer waves and confirm sales mention the zone they came from.
-8. Try moving stock between zones and observe display score/rating changes.
+4. Load stock to the van and place it into display zones.
+5. Set one tray to Bargain, one to Normal, one to Premium, and one to Reduced.
+6. Simulate several customer waves.
+7. Confirm sales mention zone, price band, and unit price.
+8. Confirm price notes appear when premium pricing discourages sensitive buyers.
+9. End the day and confirm daily pricing notes appear.
 
 ## Known Risks
 
 - This latest code pass has not yet been run in a local Vite environment by the Builder window.
 - Batch wholesale costs are rough estimates after moving to larger physical tray quantities.
 - Passive customer scoring is deliberately simple and may need quick tuning.
+- Price modifiers are first-pass and may need quick balancing.
 - Special request scoring currently uses known good/acceptable/poor/bad plant lists, not deeper explanation logic.
 - Progressive condition pressure is intentionally readable and deterministic; it may need tuning after local playtest.
 - `waterlogged` is recorded but has no negative gameplay effect yet.
