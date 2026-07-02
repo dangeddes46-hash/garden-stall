@@ -1,7 +1,7 @@
 import { PHASES, STARTING_CASH } from '../data/constants.js';
 
 export const initialState = {
-  prototypeVersion: '0.1.11-smoke-test-polish',
+  prototypeVersion: '0.1.12-readability-numbers',
   phase: PHASES.DAY0_ORDER,
   currentDay: 0,
   cash: STARTING_CASH,
