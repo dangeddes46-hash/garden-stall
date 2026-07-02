@@ -30,6 +30,59 @@ function Card({ children, className = '' }) {
   return <section className={`card ${className}`}>{children}</section>;
 }
 
+function buildSalesLines(report) {
+  const sales = (report?.tradingLog ?? []).flatMap((wave) => wave.sales ?? []);
+  const groups = sales.reduce((summary, sale) => {
+    const key = sale.plantName ?? 'Unknown stock';
+    const current = summary[key] ?? { plantName: key, quantity: 0, revenue: 0 };
+    return {
+      ...summary,
+      [key]: {
+        ...current,
+        quantity: current.quantity + (sale.quantity ?? 0),
+        revenue: current.revenue + ((sale.quantity ?? 0) * (sale.unitPrice ?? 0))
+      }
+    };
+  }, {});
+
+  const lines = Object.values(groups)
+    .sort((a, b) => b.revenue - a.revenue)
+    .map((entry) => `${entry.quantity} × ${entry.plantName} through passive trade (${money(entry.revenue)}).`);
+
+  const requestLines = (report?.requestLog ?? [])
+    .filter((request) => (request.revenue ?? 0) > 0)
+    .map((request) => `${request.plantName} answered ${request.requestName} (${money(request.revenue)}).`);
+
+  return [...lines, ...requestLines];
+}
+
+function buildPressureLines(report) {
+  const lines = [];
+  const missedCount = report?.missedCount ?? 0;
+  if (missedCount > 0) lines.push(`${missedCount} missed demand note${missedCount === 1 ? '' : 's'} showed stock or placement gaps.`);
+  (report?.pricingSummary?.notes ?? []).forEach((note) => lines.push(note));
+  if ((report?.conditionSummary ?? []).length > 0) lines.push('Some visible stock lost freshness; check condition notes before ordering tomorrow.');
+  if (lines.length === 0) lines.push('No obvious sales blockers were recorded today.');
+  return lines.slice(0, 4);
+}
+
+function buildTomorrowLines(report) {
+  const lines = [];
+  const soldLines = buildSalesLines(report);
+  const missedCount = report?.missedCount ?? 0;
+  const reducedSold = report?.pricingSummary?.soldByBand?.reduced ?? 0;
+  const premiumSold = report?.pricingSummary?.soldByBand?.premium ?? 0;
+
+  if (soldLines.length === 0) lines.push('Start tomorrow with a clearer front display: colour or giftable stock should be easy to spot.');
+  if (missedCount > 0) lines.push('Use the missed demand notes as a shopping list before the next order.');
+  if (reducedSold > 0) lines.push('Reduced stock can clear awkward leftovers, but keep it from taking over the stall mood.');
+  if (premiumSold === 0) lines.push('Try premium pricing only on good-condition stock in a strong zone.');
+  if ((report?.conditionSummary ?? []).length > 0) lines.push('Water thirsty trays before later waves, but avoid repeated watering on the same batch.');
+
+  lines.push('Keep testing a simple mix: one colourful draw, one useful edible tray, and one giftable/showy item.' );
+  return [...new Set(lines)].slice(0, 4);
+}
+
 function HeaderStatus({ state }) {
   return (
     <header className="top-bar">
@@ -57,7 +110,7 @@ function WholesalerScreen({ state, dispatch }) {
       <Card>
         <p className="eyebrow">County Plant Wholesale</p>
         <h2>{state.currentDay === 0 ? 'Opening Evening Order' : 'Evening Order'}</h2>
-        <p className="muted">Choose stock for collection tomorrow morning. Sold-out lines stay visible so the trade site already feels like a supplier catalogue.</p>
+        <p className="muted">Choose stock for collection tomorrow morning. For the first run, try mixing colour, edible stock, and one giftable or showy item instead of buying only one kind of tray.</p>
         <div className="listing-grid">
           {listings.map((listing) => {
             const plant = plantById[listing.plantId];
@@ -212,14 +265,14 @@ function ZonePlacementButtons({ batch, dispatch, stockBatches, includeReduced = 
             key={zone.id}
             className={isCurrentZone ? 'secondary' : undefined}
             disabled={isFull}
-            title={isFull ? `${zone.label} is full (${zoneUsage?.usedSlots ?? 0}/${zone.capacity}).` : zone.note}
+            title={isFull ? `${zone.label} is full (${zoneUsage?.usedSlots ?? 0}/${zone.capacity}). Move something out before placing more here.` : zone.note}
             onClick={() => dispatch({
               type: returnFromReduced ? 'RETURN_REDUCED_TO_DISPLAY' : 'PLACE_ON_DISPLAY',
               batchId: batch.id,
               zoneId: zone.id
             })}
           >
-            {isFull ? `${zone.label} full` : returnFromReduced ? `Return ${zone.label}` : zone.label}
+            {isFull ? `${zone.label}: full` : returnFromReduced ? `Return ${zone.label}` : zone.label}
           </button>
         );
       })}
@@ -227,10 +280,10 @@ function ZonePlacementButtons({ batch, dispatch, stockBatches, includeReduced = 
         <button
           className="secondary"
           disabled={(reducedUsage?.remainingSlots ?? 0) <= 0 && batch.location !== 'reduced-area'}
-          title={(reducedUsage?.remainingSlots ?? 0) <= 0 ? `Reduced area is full (${reducedUsage?.usedSlots ?? 0}/${reducedUsage?.capacity ?? 0}).` : 'Move to the reduced area and apply reduced pricing.'}
+          title={(reducedUsage?.remainingSlots ?? 0) <= 0 ? `Reduced area is full (${reducedUsage?.usedSlots ?? 0}/${reducedUsage?.capacity ?? 0}). Move stock out before reducing more.` : 'Move to the reduced area and apply reduced pricing.'}
           onClick={() => dispatch({ type: 'MOVE_TO_REDUCED', batchId: batch.id })}
         >
-          {(reducedUsage?.remainingSlots ?? 0) <= 0 && batch.location !== 'reduced-area' ? 'Reduced full' : 'Reduced area'}
+          {(reducedUsage?.remainingSlots ?? 0) <= 0 && batch.location !== 'reduced-area' ? 'Reduced: full' : 'Reduced area'}
         </button>
       )}
     </>
@@ -252,7 +305,7 @@ function TrayRow({ batch, actionLabel, actionType, actionState = null, allowWate
         {allowPricing && <PriceButtons batch={batch} dispatch={dispatch} />}
       </div>
       <div className="row-actions wrap-actions">
-        {allowWater && <button className="secondary" onClick={() => dispatch({ type: 'WATER_STOCK_BATCH', batchId: batch.id })}>Water tray</button>}
+        {allowWater && <button className="secondary" title="Watering helps dry stock. Repeated watering on the same batch can overdo it." onClick={() => dispatch({ type: 'WATER_STOCK_BATCH', batchId: batch.id })}>Water tray</button>}
         {actionType && <button disabled={disabled} title={actionTitle} onClick={() => dispatch({ type: actionType, batchId: batch.id })}>{disabled ? actionState?.label ?? actionLabel : actionLabel}</button>}
         {extraActions}
       </div>
@@ -336,7 +389,7 @@ function VanLoadoutScreen({ state, dispatch }) {
       <Card>
         <p className="eyebrow">Home Stock</p>
         <h2>Load the van</h2>
-        <p className="muted">Van capacity is {VAN_LOAD_LIMITS.traySlots} trays plus {VAN_LOAD_LIMITS.featurePots} loose/feature potted plants.</p>
+        <p className="muted">Capacity is {VAN_LOAD_LIMITS.traySlots} tray spaces plus {VAN_LOAD_LIMITS.featurePots} loose/feature potted plants. Trays and feature pots use different spaces, so a full tray bay may still leave room for loose pots.</p>
         {(trayFull || featureFull) && <p className="fine-print capacity-warning">Capacity warning: {trayFull ? 'tray space full' : null}{trayFull && featureFull ? '; ' : ''}{featureFull ? 'feature-pot space full' : null}.</p>}
         <ExpandableStockList
           title="Home stock"
@@ -346,13 +399,14 @@ function VanLoadoutScreen({ state, dispatch }) {
           actionType="LOAD_TO_VAN"
           getActionState={(batch) => {
             const status = getVanLoadStatus(state.stockBatches, batch.id);
-            return status.canLoad ? null : { disabled: true, label: 'No space', reason: status.reason };
+            return status.canLoad ? null : { disabled: true, label: 'No van space', reason: status.reason };
           }}
           dispatch={dispatch}
         />
       </Card>
       <Card>
         <h2>Van</h2>
+        <p className="fine-print">Load a balanced day rather than everything you own. You can leave stock at home for tomorrow.</p>
         <div className="totals">
           <div><span>Tray spaces</span><strong>{vanLoad.traySlots} / {VAN_LOAD_LIMITS.traySlots}</strong></div>
           <div><span>Feature pots</span><strong>{vanLoad.featurePots} / {VAN_LOAD_LIMITS.featurePots}</strong></div>
@@ -410,7 +464,7 @@ function DisplaySetupScreen({ state, dispatch }) {
       <Card>
         <p className="eyebrow">Display Setup</p>
         <h2>Zone placement and pricing</h2>
-        <p className="muted">Choose where each tray/pot sits and set its price band. Bargain helps value buyers; premium needs good stock and placement.</p>
+        <p className="muted">Front Table suits colourful or giftable stock. Floor / Crates works for useful grow-your-own trays. Feature Spot is limited; save it for showier pots.</p>
         <ZoneUsagePanel displaySummary={displaySummary} />
         <ExpandableStockList
           title="Van stock"
@@ -428,6 +482,7 @@ function DisplaySetupScreen({ state, dispatch }) {
           <div><span>Score</span><strong>{displaySummary.score}</strong></div>
         </div>
         {displaySummary.notes.map((note) => <p key={note} className="fine-print">• {note}</p>)}
+        <p className="fine-print">Watering helps dry stock, but repeated watering can overdo it.</p>
         <ExpandableStockList
           title="Display"
           batches={displayStock}
@@ -498,7 +553,7 @@ function TradingScreen({ state, dispatch }) {
         <Card>
           <p className="eyebrow">Trading Day</p>
           <h2>Passive customer waves</h2>
-          <p>Each wave generates location-weighted customers, reads display zones and prices, then visible stock takes a drying/condition tick.</p>
+          <p>Run each wave, then glance at the Current Stall before the next one. Thirsty trays can slip during the day, and watering helps if you catch them early.</p>
           <div className="totals">
             <div><span>Next wave</span><strong>{(state.tradingWaveIndex ?? 0) + 1}</strong></div>
             <div><span>Display</span><strong>{displaySummary.rating}</strong></div>
@@ -560,6 +615,11 @@ function DailySummary({ state, dispatch }) {
   const pricingNotes = latest?.pricingSummary?.notes ?? [];
   const notebookNotes = latest?.notebookNotes ?? [];
   const notebookDiscoveries = latest?.notebookDiscoveries ?? [];
+  const salesLines = buildSalesLines(latest);
+  const pressureLines = buildPressureLines(latest);
+  const tomorrowLines = buildTomorrowLines(latest);
+  const passiveUnits = (latest?.tradingLog ?? []).reduce((sum, wave) => sum + (wave.sales ?? []).reduce((waveSum, sale) => waveSum + (sale.quantity ?? 0), 0), 0);
+
   return (
     <Card>
       <p className="eyebrow">Daily Summary</p>
@@ -568,25 +628,26 @@ function DailySummary({ state, dispatch }) {
       {latest && (
         <div className="totals">
           <div><span>Revenue</span><strong>{money(latest.revenue)}</strong></div>
-          <div><span>Passive sales</span><strong>{latest.salesCount}</strong></div>
+          <div><span>Units sold</span><strong>{passiveUnits}</strong></div>
           <div><span>Requests</span><strong>{latest.requestCount ?? 0}</strong></div>
         </div>
       )}
-      <h3>Notebook feedback</h3>
-      {notebookNotes.length === 0 ? <p className="muted">No notebook feedback today.</p> : notebookNotes.map((note) => <p className="fine-print" key={note}>• {note}</p>)}
-      {notebookDiscoveries.length > 0 && (
-        <div className="stack">
-          {notebookDiscoveries.map((entry) => (
-            <article className="row-card column-card notebook-entry" key={entry.id}>
-              <strong>{entry.title}</strong>
-              <p className="fine-print">{entry.category}: {entry.text}</p>
-              <p className="fine-print">Unlocked because: {entry.reason}</p>
-            </article>
-          ))}
+
+      <h3>What sold</h3>
+      {salesLines.length === 0 ? <p className="muted">No stock sold today.</p> : salesLines.slice(0, 5).map((line) => <p className="fine-print" key={line}>• {line}</p>)}
+
+      <h3>Money</h3>
+      {latest ? (
+        <div className="totals">
+          <div><span>Passive trade</span><strong>{money(latest.passiveRevenue)}</strong></div>
+          <div><span>Requests</span><strong>{money(latest.requestRevenue)}</strong></div>
+          <div><span>Packed home</span><strong>{latest.packedCount ?? 0}</strong></div>
         </div>
-      )}
-      <h3>Pricing notes</h3>
-      {pricingNotes.length === 0 ? <p className="muted">No pricing notes today.</p> : pricingNotes.map((note) => <p className="fine-print" key={note}>• {note}</p>)}
+      ) : <p className="muted">No money summary yet.</p>}
+
+      <h3>What held sales back</h3>
+      {pressureLines.map((line) => <p className="fine-print" key={line}>• {line}</p>)}
+
       <h3>Condition notes</h3>
       {wateredSummary.map((note) => <p className="fine-print capacity-warning" key={note}>• {note}</p>)}
       {conditionSummary.length === 0 ? <p className="muted">No stock condition changes today.</p> : (
@@ -600,6 +661,27 @@ function DailySummary({ state, dispatch }) {
         </div>
       )}
       <p className="fine-print">Full per-batch condition events remain available in the JSON/debug export.</p>
+
+      <h3>Notebook feedback</h3>
+      {notebookNotes.length === 0 ? <p className="muted">No notebook feedback today.</p> : notebookNotes.map((note) => <p className="fine-print" key={note}>• {note}</p>)}
+      {notebookDiscoveries.length > 0 && (
+        <div className="stack">
+          {notebookDiscoveries.map((entry) => (
+            <article className="row-card column-card notebook-entry" key={entry.id}>
+              <strong>{entry.title}</strong>
+              <p className="fine-print">{entry.category}: {entry.text}</p>
+              <p className="fine-print">Unlocked because: {entry.reason}</p>
+            </article>
+          ))}
+        </div>
+      )}
+
+      <h3>Try tomorrow</h3>
+      {tomorrowLines.map((line) => <p className="fine-print" key={line}>• {line}</p>)}
+
+      <h3>Pricing notes</h3>
+      {pricingNotes.length === 0 ? <p className="muted">No pricing notes today.</p> : pricingNotes.map((note) => <p className="fine-print" key={note}>• {note}</p>)}
+
       <button onClick={() => dispatch({ type: 'START_EVENING_ORDER' })}>Open evening order</button>
     </Card>
   );
