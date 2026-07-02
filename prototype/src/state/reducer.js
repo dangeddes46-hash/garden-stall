@@ -17,6 +17,31 @@ function log(state, message) {
   };
 }
 
+function summarizeUnsoldStock(stockBatches = []) {
+  const packed = stockBatches.filter((batch) => ['display', 'reduced-area', 'van'].includes(batch.location) && batch.quantity > 0);
+  const byPlant = packed.reduce((summary, batch) => {
+    const current = summary[batch.plantName] ?? {
+      plantName: batch.plantName,
+      batches: 0,
+      units: 0,
+      tiredBatches: 0,
+      reducedBatches: 0
+    };
+    return {
+      ...summary,
+      [batch.plantName]: {
+        ...current,
+        batches: current.batches + 1,
+        units: current.units + (batch.quantity ?? 0),
+        tiredBatches: current.tiredBatches + (['tired', 'past-peak'].includes(batch.condition) ? 1 : 0),
+        reducedBatches: current.reducedBatches + (batch.location === 'reduced-area' || batch.reduced ? 1 : 0)
+      }
+    };
+  }, {});
+
+  return Object.values(byPlant).sort((a, b) => b.units - a.units || b.batches - a.batches);
+}
+
 function nextSetupPhase(phase) {
   const order = [
     PHASES.WEATHER,
@@ -197,6 +222,7 @@ export function reducer(state, action) {
       const conditionSummary = summarizeConditionEvents(conditionEvents);
       const wateredSummary = summarizeWateredStock(conditionResult.stockBatches);
       const displaySummary = getDisplayZoneSummary(conditionResult.stockBatches);
+      const packedStockSummary = summarizeUnsoldStock(conditionResult.stockBatches);
       const dailyReport = {
         day: state.currentDay,
         cash: state.cash,
@@ -213,18 +239,22 @@ export function reducer(state, action) {
         conditionSummary,
         wateredSummary,
         pricingSummary,
-        zoneUsage: displaySummary.zoneUsage
+        zoneUsage: displaySummary.zoneUsage,
+        displayNotes: displaySummary.notes,
+        packedStockSummary
       };
       const discovered = buildNotebookDiscoveriesForDay(dailyReport);
       const notebook = mergeNotebookDiscoveries(state.notebook, discovered, state.currentDay);
       const notebookNotes = createNotebookDailyNotes(dailyReport, notebook.lastDiscoveries ?? []);
       const packdown = packUnsoldTradingStockHome(conditionResult.stockBatches);
+      const topUnsold = packedStockSummary.slice(0, 3).map((entry) => `${entry.units} ${entry.plantName}`).join(', ');
+      const unsoldNote = topUnsold ? ` Unsold highlights: ${topUnsold}.` : '';
       const finalReport = {
         ...dailyReport,
         packedCount: packdown.packedCount,
         notebookDiscoveries: notebook.lastDiscoveries ?? [],
         notebookNotes,
-        note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionSummary.length} condition notes, ${packdown.packedCount} unsold tray batches packed home, ${(notebook.lastDiscoveries ?? []).length} new notebook entries.`
+        note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionSummary.length} condition notes, ${packdown.packedCount} unsold tray batches packed home, ${(notebook.lastDiscoveries ?? []).length} new notebook entries.${unsoldNote}`
       };
       return log({
         ...state,
