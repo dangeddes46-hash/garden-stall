@@ -48,9 +48,13 @@ function scoreBatchForCustomer(batch, archetype, location, displayModifier) {
     }
   }
 
-  if (batch.condition === 'excellent') score += 1;
+  if (batch.condition === 'excellent') {
+    score += 1;
+    reasons.push('looked fresh');
+  }
   if (batch.condition === 'tired') score -= 2;
   if (batch.condition === 'past-peak') score -= 4;
+  if (batch.moisture === 'waterlogged') score -= 0.5;
 
   const zoneModifier = getBatchZoneSaleModifier(batch, archetype);
   if (zoneModifier > 0) reasons.push(`well placed in ${getBatchDisplayZoneId(batch).replace('-', ' ')}`);
@@ -70,9 +74,16 @@ function scoreBatchForCustomer(batch, archetype, location, displayModifier) {
 
   return {
     score,
-    reasons: reasons.slice(0, 3),
+    reasons: reasons.slice(0, 4),
     priceNote
   };
+}
+
+function buildMissedDemandNote(seed, archetype, best, threshold) {
+  if (!best) return `${seed.displayName} browsed as a ${archetype.displayName}, but nothing was visible enough to judge.`;
+  const gap = Number((threshold - best.score).toFixed(1));
+  const hint = best.reasons?.[0] ? ` Closest match was ${best.batch.plantName}: ${best.reasons[0]}.` : '';
+  return `${seed.displayName} browsed as a ${archetype.displayName}, but the best match was ${gap} point${gap === 1 ? '' : 's'} short.${hint}`;
 }
 
 export function simulateCustomerWave(state) {
@@ -124,11 +135,11 @@ export function simulateCustomerWave(state) {
     });
 
     if (!best || best.score < threshold) {
-      missedDemand.push(`${seed.displayName} browsed as a ${archetype.displayName}, but nothing felt quite right.`);
+      missedDemand.push(buildMissedDemandNote(seed, archetype, best, threshold));
       continue;
     }
 
-    const saleQuantity = best.batch.loadType === 'feature-pots' ? 1 : Math.min(3, best.batch.quantity);
+    const saleQuantity = best.batch.loadType === 'feature-pots' ? 1 : Math.min(best.score >= threshold + 3 ? 4 : 3, best.batch.quantity);
     const revenue = saleQuantity * best.batch.unitRetailPrice;
     cashDelta += revenue;
     stockBatches = applySaleToBatch(stockBatches, best.batch.id, saleQuantity);
@@ -143,7 +154,7 @@ export function simulateCustomerWave(state) {
       revenue,
       score: best.score,
       zoneId: getBatchDisplayZoneId(best.batch),
-      reason: best.reasons[0] ?? 'Good visible match.'
+      reason: best.reasons.slice(0, 2).join('; ') || 'Good visible match.'
     });
     events.push(`${seed.displayName} bought ${saleQuantity} × ${best.batch.plantName}.`);
   }
