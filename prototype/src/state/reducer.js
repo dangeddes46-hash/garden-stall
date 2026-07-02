@@ -42,6 +42,71 @@ function summarizeUnsoldStock(stockBatches = []) {
   return Object.values(byPlant).sort((a, b) => b.units - a.units || b.batches - a.batches);
 }
 
+function buildNextOrderGuidance({ packedStockSummary = [], tradingLog = [], pricingSummary = {}, conditionSummary = [] }) {
+  const guidance = [];
+  const topUnsold = packedStockSummary[0];
+  const missedExamples = tradingLog.flatMap((wave) => wave.missedDemand ?? []).slice(0, 2);
+  const soldByBand = pricingSummary.soldByBand ?? pricingSummary.sold ?? {};
+
+  if (topUnsold) {
+    guidance.push({
+      type: 'reduce-order-risk',
+      summary: `Do not blindly reorder ${topUnsold.plantName}. ${topUnsold.units} were packed home across ${topUnsold.batches} batch${topUnsold.batches === 1 ? '' : 'es'}.`,
+      reason: 'Largest unsold line after packdown.'
+    });
+  }
+
+  if (packedStockSummary.some((entry) => entry.tiredBatches > 0)) {
+    guidance.push({
+      type: 'freshness-risk',
+      summary: 'Give tired leftovers priority tomorrow: reduce them, place them better, or avoid adding more of the same line.',
+      reason: 'Some packed stock was tired or past-peak.'
+    });
+  }
+
+  if (missedExamples.length > 0) {
+    guidance.push({
+      type: 'missed-demand-clue',
+      summary: `Use missed demand as the next shopping clue: ${missedExamples[0]}`,
+      reason: 'At least one customer browsed without finding a good match.'
+    });
+  }
+
+  if ((soldByBand.premium ?? 0) === 0 && (soldByBand.bargain ?? 0) > 0) {
+    guidance.push({
+      type: 'pricing-shape',
+      summary: 'Premium did not prove itself today. Keep premium for very fresh, well-placed showy stock only.',
+      reason: 'Bargain sold but premium did not.'
+    });
+  }
+
+  if ((soldByBand.reduced ?? 0) > 0) {
+    guidance.push({
+      type: 'clearance-worked',
+      summary: 'Reduced pricing moved stock, but treat it as a cleanup tool rather than the main stall identity.',
+      reason: 'Reduced stock sold today.'
+    });
+  }
+
+  if (conditionSummary.length > 0) {
+    guidance.push({
+      type: 'condition-risk',
+      summary: 'Order fewer thirsty/high-risk trays unless you plan to check and water between waves.',
+      reason: 'Condition notes were recorded during the day.'
+    });
+  }
+
+  if (guidance.length === 0) {
+    guidance.push({
+      type: 'balanced-repeat',
+      summary: 'Repeat a balanced basket: one colourful draw, one useful edible tray, and one giftable/showy item.',
+      reason: 'No strong warning signal was recorded.'
+    });
+  }
+
+  return guidance.slice(0, 5);
+}
+
 function nextSetupPhase(phase) {
   const order = [
     PHASES.WEATHER,
@@ -223,6 +288,7 @@ export function reducer(state, action) {
       const wateredSummary = summarizeWateredStock(conditionResult.stockBatches);
       const displaySummary = getDisplayZoneSummary(conditionResult.stockBatches);
       const packedStockSummary = summarizeUnsoldStock(conditionResult.stockBatches);
+      const orderGuidance = buildNextOrderGuidance({ packedStockSummary, tradingLog: state.tradingLog, pricingSummary, conditionSummary });
       const dailyReport = {
         day: state.currentDay,
         cash: state.cash,
@@ -241,7 +307,8 @@ export function reducer(state, action) {
         pricingSummary,
         zoneUsage: displaySummary.zoneUsage,
         displayNotes: displaySummary.notes,
-        packedStockSummary
+        packedStockSummary,
+        orderGuidance
       };
       const discovered = buildNotebookDiscoveriesForDay(dailyReport);
       const notebook = mergeNotebookDiscoveries(state.notebook, discovered, state.currentDay);
@@ -249,12 +316,13 @@ export function reducer(state, action) {
       const packdown = packUnsoldTradingStockHome(conditionResult.stockBatches);
       const topUnsold = packedStockSummary.slice(0, 3).map((entry) => `${entry.units} ${entry.plantName}`).join(', ');
       const unsoldNote = topUnsold ? ` Unsold highlights: ${topUnsold}.` : '';
+      const guidanceNote = orderGuidance[0]?.summary ? ` Next order clue: ${orderGuidance[0].summary}` : '';
       const finalReport = {
         ...dailyReport,
         packedCount: packdown.packedCount,
         notebookDiscoveries: notebook.lastDiscoveries ?? [],
         notebookNotes,
-        note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionSummary.length} condition notes, ${packdown.packedCount} unsold tray batches packed home, ${(notebook.lastDiscoveries ?? []).length} new notebook entries.${unsoldNote}`
+        note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionSummary.length} condition notes, ${packdown.packedCount} unsold tray batches packed home, ${(notebook.lastDiscoveries ?? []).length} new notebook entries.${unsoldNote}${guidanceNote}`
       };
       return log({
         ...state,
