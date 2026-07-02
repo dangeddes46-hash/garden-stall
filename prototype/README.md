@@ -2,7 +2,7 @@
 
 Browser prototype for The Garden Stall.
 
-Current version: `0.1.16-app-split`
+Current version: `0.1.17-trading-clock-skeleton`
 
 Current implemented slice:
 
@@ -15,6 +15,12 @@ Current implemented slice:
 - daily summary screen lives in `prototype/src/screens/DailySummary.jsx`
 - debug overlay lives in `prototype/src/components/DebugOverlay.jsx`
 - phase routing lives in `prototype/src/screens/PhaseRenderer.jsx`
+- trading day now uses a visible checkpoint clock instead of only abstract wave buttons
+- trading clock schedule lives in `prototype/src/systems/tradingClockSystem.js`
+- trading checkpoints are labelled 09:00 opening, 10:00 morning browsers, 11:30 late-morning trade, 13:00 lunch/request window, 14:30 afternoon push, and 16:00 packdown ready
+- each customer checkpoint still uses the existing passive wave simulation internally
+- trading log entries now carry checkpoint time/title metadata
+- direct live timer, pause, and speed controls are intentionally not added yet
 - static data foundation
 - phase loop skeleton
 - Day 0 wholesaler order
@@ -96,6 +102,8 @@ This is not yet the full Prototype 0.1 gameplay loop.
 
 Still placeholder:
 
+- real unattended timer
+- pause/speed controls
 - detailed weekly summary
 - notebook entries are readable feedback only, not skill bonuses yet
 - staff pressure metrics
