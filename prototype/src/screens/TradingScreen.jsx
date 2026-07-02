@@ -1,7 +1,7 @@
 import { getStockByLocation } from '../systems/stockSystem.js';
 import { getDisplayZoneSummary } from '../systems/displaySystem.js';
 import { describePriceBand } from '../systems/pricingSystem.js';
-import { getNextTradingCheckpoint, getTradingClockEntry, TRADING_DAY_SCHEDULE } from '../systems/tradingClockSystem.js';
+import { getNextTradingCheckpoint, getTradingClockEntry, getTradingClockMode, TRADING_CLOCK_MODES, TRADING_DAY_SCHEDULE } from '../systems/tradingClockSystem.js';
 import { Card, money, zoneLabel } from '../components/ui.jsx';
 import { ExpandableStockList, ReducedStockList, ZonePlacementButtons, ZoneUsagePanel } from '../components/StockLists.jsx';
 
@@ -42,6 +42,37 @@ function SpecialRequestPanel({ state, dispatch }) {
   );
 }
 
+function TradingClockControls({ state, dispatch, packdownReady, checkpointButton }) {
+  const currentMode = getTradingClockMode(state.tradingClock);
+  const waveCount = state.tradingWaveIndex ?? 0;
+  const canRunRest = !packdownReady && waveCount < 4;
+
+  return (
+    <div className="stack">
+      <h3>Clock controls</h3>
+      <div className="button-row wrap-actions">
+        {Object.values(TRADING_CLOCK_MODES).map((mode) => (
+          <button
+            key={mode.id}
+            className={currentMode.id === mode.id ? 'secondary' : undefined}
+            title={mode.note}
+            onClick={() => dispatch({ type: 'SET_TRADING_CLOCK_MODE', mode: mode.id })}
+          >
+            {mode.label}
+          </button>
+        ))}
+      </div>
+      <p className="fine-print">Current mode: <strong>{currentMode.label}</strong>. {state.tradingClock?.controlsNote ?? currentMode.note}</p>
+      <div className="button-row wrap-actions">
+        <button disabled={packdownReady} onClick={() => dispatch({ type: 'RUN_TRADING_CHECKPOINT' })}>{checkpointButton}</button>
+        <button className="secondary" disabled={!canRunRest} onClick={() => dispatch({ type: 'RUN_REST_TRADING_DAY' })}>Run rest of day</button>
+        <button className="secondary" onClick={() => dispatch({ type: 'END_TRADING_DAY' })}>End trading day</button>
+      </div>
+      <p className="fine-print">Paused means no automatic movement. Step runs one checkpoint. Fast/debug use the same safe simulation but expose the full-day shortcut for testing.</p>
+    </div>
+  );
+}
+
 function TradingClockPanel({ state, dispatch, displaySummary }) {
   const current = getTradingClockEntry(state.tradingClock);
   const next = getNextTradingCheckpoint(state.tradingClock);
@@ -60,6 +91,7 @@ function TradingClockPanel({ state, dispatch, displaySummary }) {
         <div><span>Display</span><strong>{displaySummary.rating}</strong></div>
         <div><span>Visible batches</span><strong>{displaySummary.usedSlots}</strong></div>
       </div>
+      <TradingClockControls state={state} dispatch={dispatch} packdownReady={packdownReady} checkpointButton={checkpointButton} />
       <div className="stack">
         <h3>Day schedule</h3>
         {TRADING_DAY_SCHEDULE.map((entry) => {
@@ -73,11 +105,6 @@ function TradingClockPanel({ state, dispatch, displaySummary }) {
         })}
       </div>
       <ZoneUsagePanel displaySummary={displaySummary} />
-      <div className="button-row">
-        <button disabled={packdownReady} onClick={() => dispatch({ type: 'RUN_TRADING_CHECKPOINT' })}>{checkpointButton}</button>
-        <button className="secondary" onClick={() => dispatch({ type: 'END_TRADING_DAY' })}>End trading day</button>
-      </div>
-      <p className="fine-print">This is still a testable checkpoint clock, not a live unattended timer. Pause/speed controls come next.</p>
     </Card>
   );
 }
@@ -118,7 +145,8 @@ export default function TradingScreen({ state, dispatch }) {
                 <article className="row-card column-card" key={`${wave.wave}-${index}`}>
                   <div>
                     <strong>{wave.timeLabel ? `${wave.timeLabel} · ${wave.checkpointTitle} · ` : ''}{wave.wave} · {money(wave.revenue)} revenue · Display {wave.displayRating}</strong>
-                    {wave.sales.map((sale, saleIndex) => <p className="fine-print" key={`${sale.customerName}-${saleIndex}`}>{sale.customerName} bought {sale.quantity} × {sale.plantName}{sale.zoneId ? ` from ${zoneLabel(sale.zoneId)}` : ''} at {describePriceBand(sale.priceBand ?? 'normal')} price ({money(sale.unitPrice)} each): {sale.reason}</p>)}
+                    {wave.clockMode && <p className="fine-print">Clock mode: {wave.clockMode}</p>}
+                    {wave.sales.map((sale, saleIndex) => <p className="fine-print" key={`${sale.customerName}-${saleIndex}`}>{sale.customerName} bought {sale.quantity} x {sale.plantName}{sale.zoneId ? ` from ${zoneLabel(sale.zoneId)}` : ''} at {describePriceBand(sale.priceBand ?? 'normal')} price ({money(sale.unitPrice)} each): {sale.reason}</p>)}
                     {wave.missedDemand.map((note) => <p className="fine-print" key={note}>Missed: {note}</p>)}
                     {wave.priceNotes?.map((note) => <p className="fine-print" key={note}>Price note: {note}</p>)}
                     {(wave.conditionSummary ?? []).map((entry) => <p className="fine-print" key={entry.summary}>Condition: {entry.summary}</p>)}
