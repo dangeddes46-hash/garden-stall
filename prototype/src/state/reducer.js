@@ -7,7 +7,7 @@ import { canPlaceBatchInDisplayZone, getDisplayZoneSummary } from '../systems/di
 import { pickSpecialRequest, scoreSpecialRequest } from '../systems/requestSystem.js';
 import { summarizePricingFromTradingLog } from '../systems/pricingSystem.js';
 import { buildNotebookDiscoveriesForDay, createNotebookDailyNotes, mergeNotebookDiscoveries } from '../systems/notebookSystem.js';
-import { applyEndOfDayConditionPressure, applyTradingWaveConditionPressure, waterStockBatch } from '../systems/conditionSystem.js';
+import { applyEndOfDayConditionPressure, applyTradingWaveConditionPressure, summarizeConditionEvents, summarizeWateredStock, waterStockBatch } from '../systems/conditionSystem.js';
 import { initialState } from './initialState.js';
 
 function log(state, message) {
@@ -154,13 +154,14 @@ export function reducer(state, action) {
       const result = simulateCustomerWave(state);
       const waveNumber = (state.tradingWaveIndex ?? 0) + 1;
       const conditionResult = applyTradingWaveConditionPressure(result.stateChanges.stockBatches ?? state.stockBatches, state.selectedWeather, waveNumber);
+      const conditionSummary = summarizeConditionEvents(conditionResult.conditionEvents);
       return log({
         ...state,
         ...result.stateChanges,
         stockBatches: conditionResult.stockBatches,
-        conditionLog: [...conditionResult.conditionEvents, ...(state.conditionLog ?? [])].slice(0, 24),
-        tradingLog: [{ ...result.report, conditionEvents: conditionResult.conditionEvents }, ...state.tradingLog].slice(0, 12)
-      }, `Simulated ${result.report.wave} wave: £${result.report.revenue.toFixed(2)} revenue, ${conditionResult.conditionEvents.length} condition changes.`);
+        conditionLog: [...conditionResult.conditionEvents, ...(state.conditionLog ?? [])].slice(0, 80),
+        tradingLog: [{ ...result.report, conditionEvents: conditionResult.conditionEvents, conditionSummary }, ...state.tradingLog].slice(0, 12)
+      }, `Simulated ${result.report.wave} wave: £${result.report.revenue.toFixed(2)} revenue, ${conditionSummary.length} condition notes.`);
     }
 
     case 'GENERATE_SPECIAL_REQUEST': {
@@ -193,6 +194,8 @@ export function reducer(state, action) {
       const pricingSummary = summarizePricingFromTradingLog(state.tradingLog);
       const conditionResult = applyEndOfDayConditionPressure(state.stockBatches, state.selectedWeather);
       const conditionEvents = [...conditionResult.conditionEvents, ...(state.conditionLog ?? [])];
+      const conditionSummary = summarizeConditionEvents(conditionEvents);
+      const wateredSummary = summarizeWateredStock(conditionResult.stockBatches);
       const displaySummary = getDisplayZoneSummary(conditionResult.stockBatches);
       const dailyReport = {
         day: state.currentDay,
@@ -207,6 +210,8 @@ export function reducer(state, action) {
         tradingLog: state.tradingLog,
         requestLog: state.requestLog,
         conditionEvents,
+        conditionSummary,
+        wateredSummary,
         pricingSummary,
         zoneUsage: displaySummary.zoneUsage
       };
@@ -219,7 +224,7 @@ export function reducer(state, action) {
         packedCount: packdown.packedCount,
         notebookDiscoveries: notebook.lastDiscoveries ?? [],
         notebookNotes,
-        note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionEvents.length} condition changes, ${packdown.packedCount} unsold tray batches packed home, ${(notebook.lastDiscoveries ?? []).length} new notebook entries.`
+        note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionSummary.length} condition notes, ${packdown.packedCount} unsold tray batches packed home, ${(notebook.lastDiscoveries ?? []).length} new notebook entries.`
       };
       return log({
         ...state,
@@ -229,7 +234,7 @@ export function reducer(state, action) {
         activeRequest: null,
         phase: PHASES.DAILY_SUMMARY,
         dailyReports: [...state.dailyReports, finalReport]
-      }, `Ended trading day: ${packdown.packedCount} unsold tray batches packed home, ${(notebook.lastDiscoveries ?? []).length} new notebook entries.`);
+      }, `Ended trading day: ${packdown.packedCount} unsold tray batches packed home, ${conditionSummary.length} condition notes, ${(notebook.lastDiscoveries ?? []).length} new notebook entries.`);
     }
 
     case 'START_EVENING_ORDER':
