@@ -1,0 +1,53 @@
+button {
+  max-width: 100%;
+}
+
+.row-card {
+  min-width: 0;
+}
+
+.row-card.tray-card {
+  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, max-content);
+  gap: 1rem;
+}
+
+.tray-details {
+  min-width: 0;
+}
+
+.tray-details strong,
+.tray-details p {
+  overflow-wrap: anywhere;
+}
+
+.row-actions.wrap-actions,
+.tray-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-start;
+  align-content: flex-start;
+  max-width: 100%;
+}
+
+.row-actions.wrap-actions button,
+.tray-actions button {
+  white-space: nowrap;
+}
+
+.price-actions {
+  max-width: 100%;
+}
+
+@media (max-width: 1250px) {
+  .row-card.tray-card {
+    grid-template-columns: 1fr;
+  }
+
+  .row-actions.wrap-actions,
+  .tray-actions {
+    justify-content: flex-start;
+  }
+}
