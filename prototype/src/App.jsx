@@ -6,9 +6,10 @@ import { plantById } from './data/plants.js';
 import { locations, locationById } from './data/locations.js';
 import { weekDayByNumber } from './data/weekScript.js';
 import { calculateCart } from './systems/orderSystem.js';
-import { getStockByLocation, getVanLoadSummary } from './systems/stockSystem.js';
+import { getStockByLocation, getVanLoadStatus, getVanLoadSummary } from './systems/stockSystem.js';
 import { groupStockByPlant } from './systems/stockGroupingSystem.js';
 import { getBatchDisplayZoneId, getDisplayZoneSummary } from './systems/displaySystem.js';
+import { describeMoistureForPlayer } from './systems/conditionSystem.js';
 import { PRICE_BAND_DETAILS, describePriceBand } from './systems/pricingSystem.js';
 import { createDebugExport, createMarkdownReport } from './systems/reportSystem.js';
 import { initialState } from './state/initialState.js';
@@ -40,7 +41,7 @@ function HeaderStatus({ state }) {
         <div><span>Day</span><strong>{state.currentDay}</strong></div>
         <div><span>Phase</span><strong>{PHASE_LABELS[state.phase]}</strong></div>
         <div><span>Cash</span><strong>{money(state.cash)}</strong></div>
-        <div><span>Notebook</span><strong>{state.notebook.discoveries.length}</strong></div>
+        <div><span>Notebook</span><strong>{state.notebook?.discoveries?.length ?? 0}</strong></div>
       </div>
     </header>
   );
@@ -195,48 +196,71 @@ function PriceButtons({ batch, dispatch }) {
   );
 }
 
-function ZonePlacementButtons({ batch, dispatch, includeReduced = false, returnFromReduced = false }) {
+function ZonePlacementButtons({ batch, dispatch, stockBatches, includeReduced = false, returnFromReduced = false }) {
+  const usage = getDisplayZoneSummary(stockBatches).zoneUsage;
+  const currentZoneId = getBatchDisplayZoneId(batch);
+  const stockWithoutBatch = stockBatches.filter((item) => item.id !== batch.id);
+  const reducedUsage = getDisplayZoneSummary(stockWithoutBatch).zoneUsage.find((zone) => zone.id === 'reduced-area');
   return (
     <>
-      {activeDisplayZones.map((zone) => (
+      {activeDisplayZones.map((zone) => {
+        const zoneUsage = usage.find((entry) => entry.id === zone.id);
+        const isCurrentZone = ['display', 'reduced-area'].includes(batch.location) && currentZoneId === zone.id;
+        const isFull = (zoneUsage?.remainingSlots ?? 0) <= 0 && !isCurrentZone;
+        return (
+          <button
+            key={zone.id}
+            className={isCurrentZone ? 'secondary' : undefined}
+            disabled={isFull}
+            title={isFull ? `${zone.label} is full (${zoneUsage?.usedSlots ?? 0}/${zone.capacity}).` : zone.note}
+            onClick={() => dispatch({
+              type: returnFromReduced ? 'RETURN_REDUCED_TO_DISPLAY' : 'PLACE_ON_DISPLAY',
+              batchId: batch.id,
+              zoneId: zone.id
+            })}
+          >
+            {isFull ? `${zone.label} full` : returnFromReduced ? `Return ${zone.label}` : zone.label}
+          </button>
+        );
+      })}
+      {includeReduced && (
         <button
-          key={zone.id}
-          className={getBatchDisplayZoneId(batch) === zone.id ? 'secondary' : undefined}
-          onClick={() => dispatch({
-            type: returnFromReduced ? 'RETURN_REDUCED_TO_DISPLAY' : 'PLACE_ON_DISPLAY',
-            batchId: batch.id,
-            zoneId: zone.id
-          })}
+          className="secondary"
+          disabled={(reducedUsage?.remainingSlots ?? 0) <= 0 && batch.location !== 'reduced-area'}
+          title={(reducedUsage?.remainingSlots ?? 0) <= 0 ? `Reduced area is full (${reducedUsage?.usedSlots ?? 0}/${reducedUsage?.capacity ?? 0}).` : 'Move to the reduced area and apply reduced pricing.'}
+          onClick={() => dispatch({ type: 'MOVE_TO_REDUCED', batchId: batch.id })}
         >
-          {returnFromReduced ? `Return ${zone.label}` : zone.label}
+          {(reducedUsage?.remainingSlots ?? 0) <= 0 && batch.location !== 'reduced-area' ? 'Reduced full' : 'Reduced area'}
         </button>
-      ))}
-      {includeReduced && <button className="secondary" onClick={() => dispatch({ type: 'MOVE_TO_REDUCED', batchId: batch.id })}>Reduced area</button>}
+      )}
     </>
   );
 }
 
-function TrayRow({ batch, actionLabel, actionType, allowWater = false, allowPricing = true, dispatch, extraActions = null }) {
+function TrayRow({ batch, actionLabel, actionType, actionState = null, allowWater = false, allowPricing = true, dispatch, extraActions = null }) {
   const plantCount = batch.unitHealth?.filter((unit) => !unit.sold).length ?? batch.quantity;
   const zoneId = ['display', 'reduced-area'].includes(batch.location) ? getBatchDisplayZoneId(batch) : null;
+  const disabled = actionState?.disabled ?? false;
+  const actionTitle = actionState?.reason ?? actionLabel;
   return (
     <div className="row-card">
       <div>
         <strong>{batch.batchLabel ?? 'tray'} · {batch.quantity} left · {money(batch.unitRetailPrice)} each</strong>
-        <p className="fine-print">Average tray health: {batch.condition} · {batch.moisture} · {describePriceBand(batch.priceBand)}</p>
+        <p className="fine-print">Average tray health: {batch.condition} · {describeMoistureForPlayer(batch.moisture)} · {describePriceBand(batch.priceBand)}</p>
         <p className="fine-print">Plant records: {plantCount} active · {batch.quantitySold ?? 0} sold{zoneId ? ` · ${zoneLabel(zoneId)}` : ''}</p>
+        {actionState?.reason && disabled && <p className="fine-print capacity-warning">{actionState.reason}</p>}
         {allowPricing && <PriceButtons batch={batch} dispatch={dispatch} />}
       </div>
       <div className="row-actions wrap-actions">
         {allowWater && <button className="secondary" onClick={() => dispatch({ type: 'WATER_STOCK_BATCH', batchId: batch.id })}>Water tray</button>}
-        {actionType && <button onClick={() => dispatch({ type: actionType, batchId: batch.id })}>{actionLabel}</button>}
+        {actionType && <button disabled={disabled} title={actionTitle} onClick={() => dispatch({ type: actionType, batchId: batch.id })}>{disabled ? actionState?.label ?? actionLabel : actionLabel}</button>}
         {extraActions}
       </div>
     </div>
   );
 }
 
-function ExpandableStockList({ title, batches, emptyText, actionLabel, actionType, allowWater = false, allowPricing = true, dispatch, renderExtraActions }) {
+function ExpandableStockList({ title, batches, emptyText, actionLabel, actionType, getActionState, allowWater = false, allowPricing = true, dispatch, renderExtraActions }) {
   const groups = groupStockByPlant(batches);
   const [openOverrides, setOpenOverrides] = useState({});
 
@@ -266,6 +290,7 @@ function ExpandableStockList({ title, batches, emptyText, actionLabel, actionTyp
                       batch={batch}
                       actionLabel={actionLabel}
                       actionType={actionType}
+                      actionState={getActionState ? getActionState(batch) : null}
                       allowWater={allowWater}
                       allowPricing={allowPricing}
                       dispatch={dispatch}
@@ -282,7 +307,7 @@ function ExpandableStockList({ title, batches, emptyText, actionLabel, actionTyp
   );
 }
 
-function ReducedStockList({ batches, emptyText, dispatch }) {
+function ReducedStockList({ batches, emptyText, stockBatches, dispatch }) {
   return (
     <ExpandableStockList
       title="Reduced area"
@@ -292,7 +317,7 @@ function ReducedStockList({ batches, emptyText, dispatch }) {
       dispatch={dispatch}
       renderExtraActions={(batch) => (
         <>
-          <ZonePlacementButtons batch={batch} dispatch={dispatch} returnFromReduced />
+          <ZonePlacementButtons batch={batch} dispatch={dispatch} stockBatches={stockBatches} returnFromReduced />
           <button className="secondary" onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_VAN', batchId: batch.id })}>Return van</button>
         </>
       )}
@@ -304,13 +329,27 @@ function VanLoadoutScreen({ state, dispatch }) {
   const homeStock = getStockByLocation(state.stockBatches, 'home');
   const vanStock = getStockByLocation(state.stockBatches, 'van');
   const vanLoad = getVanLoadSummary(state.stockBatches);
+  const trayFull = vanLoad.traySlots >= VAN_LOAD_LIMITS.traySlots;
+  const featureFull = vanLoad.featurePots >= VAN_LOAD_LIMITS.featurePots;
   return (
     <div className="screen-grid">
       <Card>
         <p className="eyebrow">Home Stock</p>
         <h2>Load the van</h2>
         <p className="muted">Van capacity is {VAN_LOAD_LIMITS.traySlots} trays plus {VAN_LOAD_LIMITS.featurePots} loose/feature potted plants.</p>
-        <ExpandableStockList title="Home stock" batches={homeStock} emptyText="No stock at home." actionLabel="Load" actionType="LOAD_TO_VAN" dispatch={dispatch} />
+        {(trayFull || featureFull) && <p className="fine-print capacity-warning">Capacity warning: {trayFull ? 'tray space full' : null}{trayFull && featureFull ? '; ' : ''}{featureFull ? 'feature-pot space full' : null}.</p>}
+        <ExpandableStockList
+          title="Home stock"
+          batches={homeStock}
+          emptyText="No stock at home."
+          actionLabel="Load"
+          actionType="LOAD_TO_VAN"
+          getActionState={(batch) => {
+            const status = getVanLoadStatus(state.stockBatches, batch.id);
+            return status.canLoad ? null : { disabled: true, label: 'No space', reason: status.reason };
+          }}
+          dispatch={dispatch}
+        />
       </Card>
       <Card>
         <h2>Van</h2>
@@ -347,13 +386,16 @@ function RouteConfirmScreen({ state, dispatch }) {
 function ZoneUsagePanel({ displaySummary }) {
   return (
     <div className="display-zones">
-      {displaySummary.zoneUsage.map((zone) => (
-        <div className="zone" key={zone.id}>
-          <strong>{zone.label}</strong>
-          <span>{zone.usedSlots} / {zone.capacity} slots</span>
-          <p>{zone.note}</p>
-        </div>
-      ))}
+      {displaySummary.zoneUsage.map((zone) => {
+        const isFull = zone.remainingSlots <= 0;
+        return (
+          <div className={`zone ${isFull ? 'zone-full' : ''}`} key={zone.id}>
+            <strong>{zone.label}</strong>
+            <span>{zone.usedSlots} / {zone.capacity} slots{isFull ? ' · full' : ''}</span>
+            <p>{zone.note}</p>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -375,7 +417,7 @@ function DisplaySetupScreen({ state, dispatch }) {
           batches={vanStock}
           emptyText="No stock left in van."
           dispatch={dispatch}
-          renderExtraActions={(batch) => <ZonePlacementButtons batch={batch} dispatch={dispatch} includeReduced />}
+          renderExtraActions={(batch) => <ZonePlacementButtons batch={batch} dispatch={dispatch} stockBatches={state.stockBatches} includeReduced />}
         />
       </Card>
       <Card>
@@ -394,12 +436,12 @@ function DisplaySetupScreen({ state, dispatch }) {
           dispatch={dispatch}
           renderExtraActions={(batch) => (
             <>
-              <ZonePlacementButtons batch={batch} dispatch={dispatch} includeReduced />
+              <ZonePlacementButtons batch={batch} dispatch={dispatch} stockBatches={state.stockBatches} includeReduced />
               <button className="secondary" onClick={() => dispatch({ type: 'UNLOAD_TO_HOME', batchId: batch.id })}>Home</button>
             </>
           )}
         />
-        <ReducedStockList batches={reducedStock} emptyText="No reduced stock." dispatch={dispatch} />
+        <ReducedStockList batches={reducedStock} emptyText="No reduced stock." stockBatches={state.stockBatches} dispatch={dispatch} />
         <div className="button-row">
           <button onClick={() => dispatch({ type: 'ADVANCE_PHASE' })}>Open trading</button>
           <button className="secondary" onClick={() => dispatch({ type: 'RETURN_DISPLAY_TO_VAN' })}>Return display to van</button>
@@ -481,12 +523,12 @@ function TradingScreen({ state, dispatch }) {
             dispatch={dispatch}
             renderExtraActions={(batch) => (
               <>
-                <ZonePlacementButtons batch={batch} dispatch={dispatch} includeReduced />
+                <ZonePlacementButtons batch={batch} dispatch={dispatch} stockBatches={state.stockBatches} includeReduced />
                 <button className="secondary" onClick={() => dispatch({ type: 'RETURN_BATCH_TO_VAN', batchId: batch.id })}>Van</button>
               </>
             )}
           />
-          <ReducedStockList batches={reducedStock} emptyText="No reduced stock." dispatch={dispatch} />
+          <ReducedStockList batches={reducedStock} emptyText="No reduced stock." stockBatches={state.stockBatches} dispatch={dispatch} />
         </Card>
         <Card>
           <h2>Trading Log</h2>
@@ -499,7 +541,7 @@ function TradingScreen({ state, dispatch }) {
                     {wave.sales.map((sale, saleIndex) => <p className="fine-print" key={`${sale.customerName}-${saleIndex}`}>{sale.customerName} bought {sale.quantity} × {sale.plantName}{sale.zoneId ? ` from ${zoneLabel(sale.zoneId)}` : ''} at {describePriceBand(sale.priceBand ?? 'normal')} price ({money(sale.unitPrice)} each): {sale.reason}</p>)}
                     {wave.missedDemand.map((note) => <p className="fine-print" key={note}>Missed: {note}</p>)}
                     {wave.priceNotes?.map((note) => <p className="fine-print" key={note}>Price note: {note}</p>)}
-                    {wave.conditionEvents?.map((event, eventIndex) => <p className="fine-print" key={`${event.batchId}-${eventIndex}`}>Condition: {event.plantName} {event.fromMoisture} → {event.toMoisture}{event.fromCondition !== event.toCondition ? `, ${event.fromCondition} → ${event.toCondition}` : ''}</p>)}
+                    {(wave.conditionSummary ?? []).map((entry) => <p className="fine-print" key={entry.summary}>Condition: {entry.summary}</p>)}
                   </div>
                 </article>
               ))}
@@ -513,7 +555,8 @@ function TradingScreen({ state, dispatch }) {
 
 function DailySummary({ state, dispatch }) {
   const latest = state.dailyReports[state.dailyReports.length - 1];
-  const conditionEvents = latest?.conditionEvents ?? [];
+  const conditionSummary = latest?.conditionSummary ?? [];
+  const wateredSummary = latest?.wateredSummary ?? [];
   const pricingNotes = latest?.pricingSummary?.notes ?? [];
   const notebookNotes = latest?.notebookNotes ?? [];
   const notebookDiscoveries = latest?.notebookDiscoveries ?? [];
@@ -544,24 +587,26 @@ function DailySummary({ state, dispatch }) {
       )}
       <h3>Pricing notes</h3>
       {pricingNotes.length === 0 ? <p className="muted">No pricing notes today.</p> : pricingNotes.map((note) => <p className="fine-print" key={note}>• {note}</p>)}
-      <h3>Condition changes</h3>
-      {conditionEvents.length === 0 ? <p className="muted">No stock condition changes today.</p> : (
+      <h3>Condition notes</h3>
+      {wateredSummary.map((note) => <p className="fine-print capacity-warning" key={note}>• {note}</p>)}
+      {conditionSummary.length === 0 ? <p className="muted">No stock condition changes today.</p> : (
         <div className="stack">
-          {conditionEvents.map((event, index) => (
-            <article className="row-card column-card" key={`${event.batchId ?? event.plantName}-${index}`}>
-              <strong>{event.plantName}: {event.fromCondition} → {event.toCondition}</strong>
-              <p className="fine-print">Moisture: {event.fromMoisture} → {event.toMoisture}. {event.timing ? `${event.timing}: ` : ''}{event.reason}</p>
+          {conditionSummary.map((entry, index) => (
+            <article className="row-card column-card" key={`${entry.plantName}-${entry.timing}-${index}`}>
+              <strong>{entry.count} × {entry.plantName} {entry.timing}</strong>
+              <p className="fine-print">{entry.summary}</p>
             </article>
           ))}
         </div>
       )}
+      <p className="fine-print">Full per-batch condition events remain available in the JSON/debug export.</p>
       <button onClick={() => dispatch({ type: 'START_EVENING_ORDER' })}>Open evening order</button>
     </Card>
   );
 }
 
 function NotebookPanel({ notebook, latestReport }) {
-  const discoveries = notebook.discoveries ?? [];
+  const discoveries = notebook?.discoveries ?? [];
   const latestIds = new Set((latestReport?.notebookDiscoveries ?? []).map((entry) => entry.id));
   const byCategory = discoveries.reduce((groups, entry) => {
     const category = entry.category ?? 'General';
