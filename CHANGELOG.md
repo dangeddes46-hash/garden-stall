@@ -1,5 +1,28 @@
 # Changelog — The Garden Stall
 
+## 2026-07-02 — Daily review completeness
+
+Improved end-of-day review completeness without adding a new major system.
+
+Changed:
+
+- Current version is now `0.1.13-daily-review-completeness`.
+- Daily reports now capture an unsold-stock summary before packdown.
+- Daily Summary headline note now includes top unsold stock highlights.
+- Markdown export now includes a dedicated `What Did Not Sell` section.
+- Markdown `What Held Sales Back` now includes display notes as well as missed demand, pricing, and condition notes.
+- Markdown `Try Tomorrow` can point at the largest leftover plant line.
+- JSON export gains the same daily report unsold-stock summary through `dailyReports`.
+
+Still not added:
+
+- staff implementation
+- upgrades
+- save/load
+- drag-and-drop display
+- final art dependency
+- new major gameplay systems
+
 ## 2026-07-02 — Readability and numbers polish
 
 Tuned the accepted Prototype 0.1 loop after 0.1.11 without adding new systems.
