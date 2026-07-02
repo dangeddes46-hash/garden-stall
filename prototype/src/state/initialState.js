@@ -2,7 +2,7 @@ import { PHASES, STARTING_CASH } from '../data/constants.js';
 import { createTradingClock } from '../systems/tradingClockSystem.js';
 
 export const initialState = {
-  prototypeVersion: '0.1.19-live-timer-skeleton',
+  prototypeVersion: '0.1.20-evening-order-feedback',
   phase: PHASES.DAY0_ORDER,
   currentDay: 0,
   cash: STARTING_CASH,
