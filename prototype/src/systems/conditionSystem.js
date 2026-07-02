@@ -36,13 +36,14 @@ function conditionPressureForBatch(batch, weather, intensity = 'day') {
   if (exposed) {
     if (intensity === 'wave') {
       moistureSteps += thirsty || dryingModifier >= 1.1 ? 1 : 0;
-      if (moderateMoisture && dryingModifier >= 1) moistureSteps += 1;
+      if (moderateMoisture && dryingModifier >= 1.15) moistureSteps += 1;
       if (dryTolerant) moistureSteps = 0;
       reasons.push('spent part of the day exposed on display');
     } else {
       moistureSteps += 1;
-      if (dryingModifier >= 1 || thirsty || moderateMoisture) moistureSteps += 1;
-      if (dryingModifier >= 1.2 || thirsty) moistureSteps += 1;
+      if (dryingModifier >= 1.1 || thirsty) moistureSteps += 1;
+      if (dryingModifier >= 1.25 || (thirsty && stress === 'medium')) moistureSteps += 1;
+      if (moderateMoisture && dryingModifier >= 1.2) moistureSteps += 1;
       if (dryTolerant) moistureSteps = Math.max(1, moistureSteps - 1);
       reasons.push('spent the day on display');
     }
@@ -52,12 +53,12 @@ function conditionPressureForBatch(batch, weather, intensity = 'day') {
   }
 
   const driedAlready = ['dry', 'bone-dry'].includes(batch.moisture);
-  if (exposed && stress === 'medium' && (highRisk || thirsty) && (intensity === 'day' || driedAlready)) {
+  if (exposed && stress === 'medium' && (highRisk || thirsty) && intensity === 'day' && driedAlready) {
     conditionSteps += 1;
     reasons.push('weather/display stress affected fragile stock');
   }
 
-  if (exposed && batch.moisture === 'bone-dry') {
+  if (exposed && batch.moisture === 'bone-dry' && intensity === 'day') {
     conditionSteps += 1;
     reasons.push('was already bone-dry');
   }
@@ -67,9 +68,14 @@ function conditionPressureForBatch(batch, weather, intensity = 'day') {
     reasons.push('was already tired in reduced stock');
   }
 
-  if (moderateRisk && exposed && stress === 'medium' && driedAlready) {
+  if (moderateRisk && exposed && stress === 'medium' && driedAlready && intensity === 'day') {
     conditionSteps += 1;
     reasons.push('moderate-risk stock dried on a stressful day');
+  }
+
+  if (exposed && batch.moisture === 'waterlogged' && intensity === 'day') {
+    conditionSteps += 1;
+    reasons.push('was overwatered before a full day on display');
   }
 
   return {
@@ -100,6 +106,72 @@ function applyConditionPressure(stockBatches, weather, intensity, timing) {
   });
 
   return { stockBatches: nextStock, conditionEvents };
+}
+
+export function describeMoistureForPlayer(moisture) {
+  if (moisture === 'waterlogged') return 'overwatered';
+  return moisture ?? 'unknown';
+}
+
+function summarizeTiming(timing) {
+  if (timing?.startsWith('wave-')) return 'during trading';
+  if (timing === 'end-of-day') return 'at packdown';
+  return timing ?? 'unknown timing';
+}
+
+export function summarizeConditionEvents(conditionEvents = []) {
+  const groups = new Map();
+
+  conditionEvents.forEach((event) => {
+    const conditionChanged = event.fromCondition !== event.toCondition;
+    const moistureChanged = event.fromMoisture !== event.toMoisture;
+    const key = [
+      event.plantName,
+      summarizeTiming(event.timing),
+      conditionChanged ? `${event.fromCondition}->${event.toCondition}` : 'condition-same',
+      moistureChanged ? `${event.fromMoisture}->${event.toMoisture}` : 'moisture-same',
+      event.reason
+    ].join('|');
+
+    const existing = groups.get(key) ?? {
+      plantName: event.plantName,
+      timing: summarizeTiming(event.timing),
+      fromCondition: event.fromCondition,
+      toCondition: event.toCondition,
+      fromMoisture: event.fromMoisture,
+      toMoisture: event.toMoisture,
+      reason: event.reason,
+      count: 0,
+      batchIds: []
+    };
+
+    existing.count += 1;
+    existing.batchIds.push(event.batchId);
+    groups.set(key, existing);
+  });
+
+  return [...groups.values()].map((entry) => {
+    const unit = entry.count === 1 ? 'batch' : 'batches';
+    const conditionText = entry.fromCondition !== entry.toCondition
+      ? `${entry.fromCondition} → ${entry.toCondition}`
+      : `stayed ${entry.toCondition}`;
+    const moistureText = entry.fromMoisture !== entry.toMoisture
+      ? `${describeMoistureForPlayer(entry.fromMoisture)} → ${describeMoistureForPlayer(entry.toMoisture)}`
+      : `stayed ${describeMoistureForPlayer(entry.toMoisture)}`;
+
+    return {
+      ...entry,
+      summary: `${entry.count} ${entry.plantName} ${unit} ${entry.timing}: ${conditionText}; moisture ${moistureText}. ${entry.reason}`
+    };
+  });
+}
+
+export function summarizeWateredStock(stockBatches = []) {
+  const visible = stockBatches.filter((batch) => ['display', 'reduced-area'].includes(batch.location) && batch.quantity > 0);
+  const waterloggedCount = visible.filter((batch) => batch.moisture === 'waterlogged').length;
+
+  if (waterloggedCount === 0) return [];
+  return [`${waterloggedCount} visible ${waterloggedCount === 1 ? 'batch is' : 'batches are'} overwatered. Overwatered stock now carries a light end-of-day condition risk if left on display.`];
 }
 
 export function waterStockBatch(stockBatches, batchId) {
