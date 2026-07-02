@@ -2,7 +2,7 @@
 
 Browser prototype for The Garden Stall.
 
-Current version: `0.1.13-daily-review-completeness`
+Current version: `0.1.14-next-order-guidance`
 
 Current implemented slice:
 
@@ -23,8 +23,9 @@ Current implemented slice:
 - pricing bands have been tuned to be less binary: bargain/reduced are less overpowering and premium is less punitive when stock is strong
 - trading logs include sale price band, unit price, score, and clearer reason text
 - missed-demand notes include the closest match and the score gap where useful
-- daily report now captures an unsold stock summary before packdown
-- Daily Summary headline note includes top unsold stock highlights
+- daily report captures an unsold stock summary before packdown
+- daily report now also captures next-order guidance built from leftovers, missed demand, pricing shape, and condition risk
+- Daily Summary headline note includes top unsold stock highlights and the first next-order clue
 - Markdown debug report includes a dedicated What Did Not Sell section
 - first-pass notebook discovery system
 - notebook entries unlock from observed daily outcomes
