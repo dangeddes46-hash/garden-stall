@@ -8,7 +8,7 @@ import { pickSpecialRequest, scoreSpecialRequest } from '../systems/requestSyste
 import { summarizePricingFromTradingLog } from '../systems/pricingSystem.js';
 import { buildNotebookDiscoveriesForDay, createNotebookDailyNotes, mergeNotebookDiscoveries } from '../systems/notebookSystem.js';
 import { applyEndOfDayConditionPressure, applyTradingWaveConditionPressure, summarizeConditionEvents, summarizeWateredStock, waterStockBatch } from '../systems/conditionSystem.js';
-import { advanceTradingClock, createTradingClock, getNextTradingCheckpoint } from '../systems/tradingClockSystem.js';
+import { advanceTradingClock, createTradingClock, getNextTradingCheckpoint, setTradingClockMode } from '../systems/tradingClockSystem.js';
 import { initialState } from './initialState.js';
 
 function log(state, message) {
@@ -145,6 +145,7 @@ function runTradingCheckpoint(state) {
     timeLabel: nextCheckpoint.timeLabel,
     checkpointTitle: nextCheckpoint.title,
     checkpointDescription: nextCheckpoint.description,
+    clockMode: state.tradingClock?.mode ?? 'step',
     conditionEvents: conditionResult.conditionEvents,
     conditionSummary
   };
@@ -157,6 +158,19 @@ function runTradingCheckpoint(state) {
     conditionLog: [...conditionResult.conditionEvents, ...(state.conditionLog ?? [])].slice(0, 80),
     tradingLog: [timedReport, ...state.tradingLog].slice(0, 12)
   }, `${nextCheckpoint.timeLabel} ${nextCheckpoint.title}: ${result.report.wave} produced £${result.report.revenue.toFixed(2)} revenue and ${conditionSummary.length} condition notes.`);
+}
+
+function runRemainingTradingDay(state) {
+  if (state.phase !== PHASES.TRADING) return log(state, 'Run rest of day blocked: not in trading phase.');
+  let nextState = state;
+  let steps = 0;
+
+  while (!(nextState.tradingClock?.isComplete) && steps < 6) {
+    nextState = runTradingCheckpoint(nextState);
+    steps += 1;
+  }
+
+  return log(nextState, `Debug resolved ${steps} trading checkpoint${steps === 1 ? '' : 's'} to ${nextState.tradingClock?.currentTime ?? 'unknown time'}.`);
 }
 
 export function reducer(state, action) {
@@ -281,8 +295,14 @@ export function reducer(state, action) {
       return log({ ...state, stockBatches: watered.stockBatches }, `Watered ${watered.changedCount} plants in one tray batch.`);
     }
 
+    case 'SET_TRADING_CLOCK_MODE':
+      return log({ ...state, tradingClock: setTradingClockMode(state.tradingClock, action.mode) }, `Trading clock mode set to ${action.mode}.`);
+
     case 'RUN_TRADING_CHECKPOINT':
       return runTradingCheckpoint(state);
+
+    case 'RUN_REST_TRADING_DAY':
+      return runRemainingTradingDay(state);
 
     case 'RUN_CUSTOMER_WAVE':
       return runTradingCheckpoint(state);
