@@ -6,7 +6,7 @@ Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`0.1.14-next-order-guidance`
+`0.1.15-daily-summary-ui`
 
 ## Current Source of Truth
 
@@ -89,8 +89,9 @@ Implemented:
 - unsold van/display/reduced stock is automatically packed back home at end of day
 - daily reports capture an unsold stock summary before packdown
 - Daily Summary headline note includes top unsold stock highlights
-- daily reports now include next-order guidance built from leftovers, missed demand, pricing, and condition risk
-- Daily Summary headline note now includes the first next-order clue
+- daily reports include next-order guidance built from leftovers, missed demand, pricing, and condition risk
+- Daily Summary headline note includes the first next-order clue
+- Markdown export includes dedicated What Did Not Sell and Next Order Guidance sections
 - passive customer wave simulation with sales, revenue, missed demand, pricing notes, and trading log
 - progressive wave-by-wave moisture/condition pressure during trading
 - repeated condition events are compressed into player-facing condition notes in trading and daily summary views
@@ -106,11 +107,12 @@ Implemented:
 - notebook entries included in JSON and Markdown debug exports
 - Markdown export includes a Daily Review section plus current state, pending orders, stock, requests, pricing, notebook, condition summary, detailed condition changes, and debug log
 - end-of-day condition wrap-up based on display exposure, moisture, plant risk, and weather stress
-- condition, pricing, notebook, unsold-stock, and order-guidance summaries in daily report and JSON export
+- condition, pricing, notebook, unsold-stock, and order-guidance summaries in daily report, JSON export, and Markdown debug report
 - debug/admin panel with cash tools, phase jump, next-day jump, reset, JSON export, and Markdown report export
 
 Still placeholder:
 
+- direct in-game Daily Summary cards for What Did Not Sell and Next Order Guidance
 - detailed weekly summary
 - notebook entries are readable feedback only, not skill bonuses yet
 - staff pressure metrics
@@ -118,7 +120,7 @@ Still placeholder:
 
 ## Current Priority
 
-Run the `/prototype/` app locally after pulling latest changes and confirm the Daily Summary headline note gives a useful next-order clue after a normal trading day.
+Finish the direct in-game Daily Summary cards in `prototype/src/App.jsx`, then move to the real-time trading-day skeleton.
 
 ## Recommended Next Actions
 
@@ -128,7 +130,8 @@ Run the `/prototype/` app locally after pulling latest changes and confirm the D
 4. Place some stock well and some stock poorly, then run all four waves.
 5. End the day and check the Daily Summary note for both unsold highlights and a next-order clue.
 6. Export JSON and confirm `dailyReports[0].orderGuidance` is present.
-7. Treat Markdown next-order guidance as pending because the connector blocked that export-file update in this pass.
+7. Export Markdown and confirm the Daily Review includes both What Did Not Sell and Next Order Guidance.
+8. Treat direct in-game cards for those two sections as the next UI task.
 
 ## Known Risks
 
@@ -136,8 +139,7 @@ Run the `/prototype/` app locally after pulling latest changes and confirm the D
 - Batch wholesale costs are rough estimates after moving to larger physical tray quantities.
 - Passive customer scoring is deliberately simple and may need quick tuning.
 - Premium/reduced/bargain tuning is still heuristic and needs local playtest feel.
-- Unsold-stock summary is useful, but it may still need a direct UI section if the headline note is not visible enough.
-- Markdown export was not updated for next-order guidance in 0.1.14 because the GitHub connector blocked the full-file write twice.
+- Unsold-stock and next-order guidance are visible in the headline note and Markdown export, but not yet as separate in-game Daily Summary cards.
 - Notebook discovery rules are deliberately simple and may need quick tuning after playtest.
 - Notebook entries currently provide readable feedback only; they do not yet unlock skill bonuses.
 - Special request scoring currently uses known good/acceptable/poor/bad plant lists, not deeper explanation logic.
