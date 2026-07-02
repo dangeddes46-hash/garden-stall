@@ -39,13 +39,26 @@ function buildSalesLines(report) {
   return lines.length ? lines.join('\n') : '- No stock sold today';
 }
 
+function buildUnsoldLines(report) {
+  const packed = report?.packedStockSummary ?? [];
+  if (packed.length === 0) return '- No unsold visible/van stock was packed home';
+  return packed.slice(0, 8).map((entry) => {
+    const notes = [];
+    if (entry.tiredBatches > 0) notes.push(`${entry.tiredBatches} tired/past-peak`);
+    if (entry.reducedBatches > 0) notes.push(`${entry.reducedBatches} reduced`);
+    const suffix = notes.length ? ` (${notes.join(', ')})` : '';
+    return `- ${entry.units} ${entry.plantName} left across ${entry.batches} batch${entry.batches === 1 ? '' : 'es'}${suffix}`;
+  }).join('\n');
+}
+
 function buildPressureLines(report) {
   const lines = [];
   const missedCount = report?.missedCount ?? 0;
   if (missedCount > 0) lines.push(`- ${missedCount} missed demand note${missedCount === 1 ? '' : 's'} showed stock or placement gaps`);
-  (report?.pricingSummary?.notes ?? []).forEach((note) => lines.push(`- ${note}`));
+  (report?.displayNotes ?? []).slice(0, 3).forEach((note) => lines.push(`- ${note}`));
+  (report?.pricingSummary?.notes ?? []).slice(0, 3).forEach((note) => lines.push(`- ${note}`));
   if ((report?.conditionSummary ?? []).length > 0) lines.push('- Some visible stock lost freshness; check condition notes before ordering tomorrow');
-  return lines.length ? lines.join('\n') : '- No obvious sales blockers were recorded today';
+  return lines.length ? [...new Set(lines)].slice(0, 8).join('\n') : '- No obvious sales blockers were recorded today';
 }
 
 function buildTomorrowLines(report) {
@@ -53,14 +66,17 @@ function buildTomorrowLines(report) {
   const missedCount = report?.missedCount ?? 0;
   const reducedSold = report?.pricingSummary?.soldByBand?.reduced ?? 0;
   const premiumSold = report?.pricingSummary?.soldByBand?.premium ?? 0;
+  const unsold = report?.packedStockSummary ?? [];
+  const topUnsold = unsold[0];
 
+  if (topUnsold) lines.push(`- Decide what to do with leftover ${topUnsold.plantName}: reduce it, move it, or avoid reordering too much`);
   if (missedCount > 0) lines.push('- Use missed demand as tomorrow\'s shopping/placement clue');
   if (reducedSold > 0) lines.push('- Reduced stock can clear awkward leftovers, but keep it from taking over the stall mood');
   if (premiumSold === 0) lines.push('- Try premium pricing only on good-condition stock in a strong zone');
   if ((report?.conditionSummary ?? []).length > 0) lines.push('- Water thirsty trays before later waves, but avoid repeated watering on the same batch');
   lines.push('- Test a simple mix: one colourful draw, one useful edible tray, and one giftable/showy item');
 
-  return [...new Set(lines)].slice(0, 4).join('\n');
+  return [...new Set(lines)].slice(0, 5).join('\n');
 }
 
 export function createDebugExport(state) {
@@ -129,6 +145,7 @@ export function createMarkdownReport(state) {
     `- Location: ${locationName}\n\n` +
     `## Daily Review\n\n` +
     `### What Sold\n\n${buildSalesLines(report)}\n\n` +
+    `### What Did Not Sell\n\n${buildUnsoldLines(report)}\n\n` +
     `### Money\n\n${moneyLines}\n\n` +
     `### What Held Sales Back\n\n${buildPressureLines(report)}\n\n` +
     `### Try Tomorrow\n\n${buildTomorrowLines(report)}\n\n` +
