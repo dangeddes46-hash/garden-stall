@@ -6,7 +6,7 @@ Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`0.1.15-daily-summary-ui`
+`0.1.16-app-split`
 
 ## Current Source of Truth
 
@@ -49,6 +49,14 @@ The Prototype 0.1 browser app lives in `/prototype/`.
 Implemented:
 
 - Vite + React + JavaScript app shell
+- `App.jsx` has been split into smaller screen/component files for safer future UI edits
+- shared UI helpers live in `prototype/src/components/ui.jsx`
+- stock list, tray row, price, display-zone, and reduced-area controls live in `prototype/src/components/StockLists.jsx`
+- setup flow screens live in `prototype/src/screens/SetupScreens.jsx`
+- trading screen lives in `prototype/src/screens/TradingScreen.jsx`
+- daily summary screen lives in `prototype/src/screens/DailySummary.jsx`
+- debug overlay lives in `prototype/src/components/DebugOverlay.jsx`
+- phase routing lives in `prototype/src/screens/PhaseRenderer.jsx`
 - static data modules for plants, locations, supplier listings, tray profiles, customer archetypes, customer seeds, special requests, notebook discoveries, and first-week script
 - small version tag in the top header, backed by `state.prototypeVersion`
 - reducer-based phase loop skeleton
@@ -88,6 +96,7 @@ Implemented:
 - reduced stock can return to a selected display zone or van during trading-day setup
 - unsold van/display/reduced stock is automatically packed back home at end of day
 - daily reports capture an unsold stock summary before packdown
+- Daily Summary has direct What Did Not Sell and Next Order Guidance sections
 - Daily Summary headline note includes top unsold stock highlights
 - daily reports include next-order guidance built from leftovers, missed demand, pricing, and condition risk
 - Daily Summary headline note includes the first next-order clue
@@ -112,7 +121,6 @@ Implemented:
 
 Still placeholder:
 
-- direct in-game Daily Summary cards for What Did Not Sell and Next Order Guidance
 - detailed weekly summary
 - notebook entries are readable feedback only, not skill bonuses yet
 - staff pressure metrics
@@ -120,26 +128,24 @@ Still placeholder:
 
 ## Current Priority
 
-Finish the direct in-game Daily Summary cards in `prototype/src/App.jsx`, then move to the real-time trading-day skeleton.
+Run the refactored `/prototype/` app locally, confirm the split compiles, and smoke-test one full day. If clean, move next to the real-time trading-day skeleton.
 
 ## Recommended Next Actions
 
 1. Run `git pull`, then `cd prototype && npm.cmd install && npm.cmd run dev` on Windows, or `cd prototype && npm install && npm run dev` elsewhere.
 2. Reset the prototype from the debug panel.
-3. Order a mixed basket and deliberately overbuy one plant line.
-4. Place some stock well and some stock poorly, then run all four waves.
-5. End the day and check the Daily Summary note for both unsold highlights and a next-order clue.
-6. Export JSON and confirm `dailyReports[0].orderGuidance` is present.
-7. Export Markdown and confirm the Daily Review includes both What Did Not Sell and Next Order Guidance.
-8. Treat direct in-game cards for those two sections as the next UI task.
+3. Run through order, collection, location, van loadout, display setup, trading, daily summary, and export.
+4. Confirm the Daily Summary screen directly shows What Did Not Sell and Next Order Guidance.
+5. Confirm JSON and Markdown exports still work.
+6. If the refactor smoke-test is clean, begin real-time trading-day skeleton next.
 
 ## Known Risks
 
 - This latest code pass has not yet been run in a local Vite environment by the Builder window.
+- The App split is broad and should be smoke-tested immediately for import/export mistakes.
 - Batch wholesale costs are rough estimates after moving to larger physical tray quantities.
 - Passive customer scoring is deliberately simple and may need quick tuning.
 - Premium/reduced/bargain tuning is still heuristic and needs local playtest feel.
-- Unsold-stock and next-order guidance are visible in the headline note and Markdown export, but not yet as separate in-game Daily Summary cards.
 - Notebook discovery rules are deliberately simple and may need quick tuning after playtest.
 - Notebook entries currently provide readable feedback only; they do not yet unlock skill bonuses.
 - Special request scoring currently uses known good/acceptable/poor/bad plant lists, not deeper explanation logic.
