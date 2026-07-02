@@ -6,7 +6,7 @@ Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`0.1.13-daily-review-completeness`
+`0.1.14-next-order-guidance`
 
 ## Current Source of Truth
 
@@ -87,9 +87,10 @@ Implemented:
 - trading log records sale zone, price band, unit price, score, and clearer reason text for bought stock
 - reduced stock can return to a selected display zone or van during trading-day setup
 - unsold van/display/reduced stock is automatically packed back home at end of day
-- daily reports now capture an unsold stock summary before packdown
-- Daily Summary headline note now includes top unsold stock highlights
-- Markdown export now includes a dedicated What Did Not Sell section
+- daily reports capture an unsold stock summary before packdown
+- Daily Summary headline note includes top unsold stock highlights
+- daily reports now include next-order guidance built from leftovers, missed demand, pricing, and condition risk
+- Daily Summary headline note now includes the first next-order clue
 - passive customer wave simulation with sales, revenue, missed demand, pricing notes, and trading log
 - progressive wave-by-wave moisture/condition pressure during trading
 - repeated condition events are compressed into player-facing condition notes in trading and daily summary views
@@ -105,7 +106,7 @@ Implemented:
 - notebook entries included in JSON and Markdown debug exports
 - Markdown export includes a Daily Review section plus current state, pending orders, stock, requests, pricing, notebook, condition summary, detailed condition changes, and debug log
 - end-of-day condition wrap-up based on display exposure, moisture, plant risk, and weather stress
-- condition, pricing, notebook, and unsold-stock summaries in daily report, JSON export, and Markdown debug report
+- condition, pricing, notebook, unsold-stock, and order-guidance summaries in daily report and JSON export
 - debug/admin panel with cash tools, phase jump, next-day jump, reset, JSON export, and Markdown report export
 
 Still placeholder:
@@ -117,7 +118,7 @@ Still placeholder:
 
 ## Current Priority
 
-Run the `/prototype/` app locally after pulling latest changes and confirm the Daily Summary note plus Markdown What Did Not Sell section read sensibly after a normal trading day.
+Run the `/prototype/` app locally after pulling latest changes and confirm the Daily Summary headline note gives a useful next-order clue after a normal trading day.
 
 ## Recommended Next Actions
 
@@ -125,9 +126,9 @@ Run the `/prototype/` app locally after pulling latest changes and confirm the D
 2. Reset the prototype from the debug panel.
 3. Order a mixed basket and deliberately overbuy one plant line.
 4. Place some stock well and some stock poorly, then run all four waves.
-5. End the day and check the Daily Summary headline note for unsold highlights.
-6. Export Markdown and confirm the What Did Not Sell section lists leftover units/batches clearly.
-7. Confirm Try Tomorrow points at the largest leftover plant in a useful way.
+5. End the day and check the Daily Summary note for both unsold highlights and a next-order clue.
+6. Export JSON and confirm `dailyReports[0].orderGuidance` is present.
+7. Treat Markdown next-order guidance as pending because the connector blocked that export-file update in this pass.
 
 ## Known Risks
 
@@ -135,7 +136,8 @@ Run the `/prototype/` app locally after pulling latest changes and confirm the D
 - Batch wholesale costs are rough estimates after moving to larger physical tray quantities.
 - Passive customer scoring is deliberately simple and may need quick tuning.
 - Premium/reduced/bargain tuning is still heuristic and needs local playtest feel.
-- Unsold-stock summary is now useful, but it may need a direct UI section if the headline note is not visible enough.
+- Unsold-stock summary is useful, but it may still need a direct UI section if the headline note is not visible enough.
+- Markdown export was not updated for next-order guidance in 0.1.14 because the GitHub connector blocked the full-file write twice.
 - Notebook discovery rules are deliberately simple and may need quick tuning after playtest.
 - Notebook entries currently provide readable feedback only; they do not yet unlock skill bonuses.
 - Special request scoring currently uses known good/acceptable/poor/bad plant lists, not deeper explanation logic.
