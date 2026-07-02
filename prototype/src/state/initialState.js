@@ -1,7 +1,8 @@
 import { PHASES, STARTING_CASH } from '../data/constants.js';
+import { createTradingClock } from '../systems/tradingClockSystem.js';
 
 export const initialState = {
-  prototypeVersion: '0.1.16-app-split',
+  prototypeVersion: '0.1.17-trading-clock-skeleton',
   phase: PHASES.DAY0_ORDER,
   currentDay: 0,
   cash: STARTING_CASH,
@@ -16,6 +17,7 @@ export const initialState = {
     lastDiscoveries: [],
     skills: []
   },
+  tradingClock: createTradingClock(),
   tradingWaveIndex: 0,
   tradingLog: [],
   activeRequest: null,
