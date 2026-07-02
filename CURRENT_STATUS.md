@@ -6,7 +6,7 @@ Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`0.1.12-readability-numbers`
+`0.1.13-daily-review-completeness`
 
 ## Current Source of Truth
 
@@ -82,11 +82,14 @@ Implemented:
 - display score considers zone fit as well as fullness, colour, giftability, tired stock, and reduced-stock pressure
 - display scoring has been lightly softened: poor displays are less punishing and one or two reduced batches are less damaging
 - customer passive-wave scoring considers zone fit and price sensitivity for each candidate batch
-- customer missed-demand notes now include the closest visible match and score gap where useful
+- customer missed-demand notes include the closest visible match and score gap where useful
 - strong passive matches can sell up to 4 tray plants instead of always capping at 3
 - trading log records sale zone, price band, unit price, score, and clearer reason text for bought stock
 - reduced stock can return to a selected display zone or van during trading-day setup
 - unsold van/display/reduced stock is automatically packed back home at end of day
+- daily reports now capture an unsold stock summary before packdown
+- Daily Summary headline note now includes top unsold stock highlights
+- Markdown export now includes a dedicated What Did Not Sell section
 - passive customer wave simulation with sales, revenue, missed demand, pricing notes, and trading log
 - progressive wave-by-wave moisture/condition pressure during trading
 - repeated condition events are compressed into player-facing condition notes in trading and daily summary views
@@ -102,7 +105,7 @@ Implemented:
 - notebook entries included in JSON and Markdown debug exports
 - Markdown export includes a Daily Review section plus current state, pending orders, stock, requests, pricing, notebook, condition summary, detailed condition changes, and debug log
 - end-of-day condition wrap-up based on display exposure, moisture, plant risk, and weather stress
-- condition, pricing, and notebook summaries in daily report, JSON export, and Markdown debug report
+- condition, pricing, notebook, and unsold-stock summaries in daily report, JSON export, and Markdown debug report
 - debug/admin panel with cash tools, phase jump, next-day jump, reset, JSON export, and Markdown report export
 
 Still placeholder:
@@ -114,18 +117,17 @@ Still placeholder:
 
 ## Current Priority
 
-Run the `/prototype/` app locally after pulling latest changes and confirm the accepted smoke-test route still works with the 0.1.12 pricing/display tuning.
+Run the `/prototype/` app locally after pulling latest changes and confirm the Daily Summary note plus Markdown What Did Not Sell section read sensibly after a normal trading day.
 
 ## Recommended Next Actions
 
 1. Run `git pull`, then `cd prototype && npm.cmd install && npm.cmd run dev` on Windows, or `cd prototype && npm install && npm run dev` elsewhere.
 2. Reset the prototype from the debug panel.
-3. Order a mixed basket including one colourful/giftable line, one edible/useful line, and one possible premium candidate.
-4. Place obvious matches in Front Table, Floor / Crates, and Feature Spot, then run all four waves.
-5. Try one premium price on good-condition showy stock and one bargain/reduced price on weaker stock.
-6. Confirm missed-demand notes now give a more useful clue than only “nothing felt right.”
-7. End the day and confirm Daily Summary / Markdown export still read cleanly.
-8. Watch whether the revenue feels too generous after strong matches can sell up to 4 tray plants.
+3. Order a mixed basket and deliberately overbuy one plant line.
+4. Place some stock well and some stock poorly, then run all four waves.
+5. End the day and check the Daily Summary headline note for unsold highlights.
+6. Export Markdown and confirm the What Did Not Sell section lists leftover units/batches clearly.
+7. Confirm Try Tomorrow points at the largest leftover plant in a useful way.
 
 ## Known Risks
 
@@ -133,6 +135,7 @@ Run the `/prototype/` app locally after pulling latest changes and confirm the a
 - Batch wholesale costs are rough estimates after moving to larger physical tray quantities.
 - Passive customer scoring is deliberately simple and may need quick tuning.
 - Premium/reduced/bargain tuning is still heuristic and needs local playtest feel.
+- Unsold-stock summary is now useful, but it may need a direct UI section if the headline note is not visible enough.
 - Notebook discovery rules are deliberately simple and may need quick tuning after playtest.
 - Notebook entries currently provide readable feedback only; they do not yet unlock skill bonuses.
 - Special request scoring currently uses known good/acceptable/poor/bad plant lists, not deeper explanation logic.
