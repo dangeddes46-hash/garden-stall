@@ -1,7 +1,7 @@
 import { PHASES, STARTING_CASH } from '../data/constants.js';
 
 export const initialState = {
-  prototypeVersion: '0.1.14-next-order-guidance',
+  prototypeVersion: '0.1.15-daily-summary-ui',
   phase: PHASES.DAY0_ORDER,
   currentDay: 0,
   cash: STARTING_CASH,
