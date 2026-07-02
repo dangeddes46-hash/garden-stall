@@ -1,5 +1,31 @@
 # Changelog — The Garden Stall
 
+## 2026-07-02 — Next-order guidance
+
+Added a safer next-order guidance layer to the daily report without adding a new major system.
+
+Changed:
+
+- Current version is now `0.1.14-next-order-guidance`.
+- Daily reports now generate `orderGuidance` from unsold leftovers, missed demand, pricing shape, and condition risk.
+- Daily Summary headline note now includes the first next-order clue.
+- JSON export carries the new guidance through `dailyReports`.
+- Guidance can warn against blindly reordering the largest leftover line.
+- Guidance can flag tired leftovers, missed-demand clues, premium/bargain shape, reduced stock cleanup, and condition-risk ordering.
+
+Known limitation:
+
+- Markdown export was not updated for next-order guidance in this pass because the GitHub connector blocked the full-file write twice.
+
+Still not added:
+
+- staff implementation
+- upgrades
+- save/load
+- drag-and-drop display
+- final art dependency
+- new major gameplay systems
+
 ## 2026-07-02 — Daily review completeness
 
 Improved end-of-day review completeness without adding a new major system.
