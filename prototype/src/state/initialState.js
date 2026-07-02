@@ -2,7 +2,7 @@ import { PHASES, STARTING_CASH } from '../data/constants.js';
 import { createTradingClock } from '../systems/tradingClockSystem.js';
 
 export const initialState = {
-  prototypeVersion: '0.1.17a-report-layout-patch',
+  prototypeVersion: '0.1.18-trading-controls',
   phase: PHASES.DAY0_ORDER,
   currentDay: 0,
   cash: STARTING_CASH,
