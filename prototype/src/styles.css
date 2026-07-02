@@ -265,6 +265,16 @@ p {
   margin-bottom: 0.35rem;
 }
 
+.capacity-warning {
+  color: #8a4e22;
+  font-weight: 700;
+}
+
+.zone.zone-full {
+  border-style: dashed;
+  opacity: 0.78;
+}
+
 .totals {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
