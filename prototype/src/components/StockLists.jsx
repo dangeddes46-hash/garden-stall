@@ -73,15 +73,15 @@ export function TrayRow({ batch, actionLabel, actionType, actionState = null, al
   const disabled = actionState?.disabled ?? false;
   const actionTitle = actionState?.reason ?? actionLabel;
   return (
-    <div className="row-card">
-      <div>
+    <div className="row-card tray-card">
+      <div className="tray-details">
         <strong>{batch.batchLabel ?? 'tray'} · {batch.quantity} left · {money(batch.unitRetailPrice)} each</strong>
         <p className="fine-print">Average tray health: {batch.condition} · {describeMoistureForPlayer(batch.moisture)} · {describePriceBand(batch.priceBand)}</p>
         <p className="fine-print">Plant records: {plantCount} active · {batch.quantitySold ?? 0} sold{zoneId ? ` · ${zoneLabel(zoneId)}` : ''}</p>
         {actionState?.reason && disabled && <p className="fine-print capacity-warning">{actionState.reason}</p>}
         {allowPricing && <PriceButtons batch={batch} dispatch={dispatch} />}
       </div>
-      <div className="row-actions wrap-actions">
+      <div className="row-actions wrap-actions tray-actions">
         {allowWater && <button className="secondary" title="Watering helps dry stock. Repeated watering on the same batch can overdo it." onClick={() => dispatch({ type: 'WATER_STOCK_BATCH', batchId: batch.id })}>Water tray</button>}
         {actionType && <button disabled={disabled} title={actionTitle} onClick={() => dispatch({ type: actionType, batchId: batch.id })}>{disabled ? actionState?.label ?? actionLabel : actionLabel}</button>}
         {extraActions}
@@ -110,7 +110,7 @@ export function ExpandableStockList({ title, batches, emptyText, actionLabel, ac
           {groups.map((group) => (
             <div key={group.key} className="column-card row-card">
               <button className="link-button" onClick={() => toggle(group)}>
-                {isOpen(group) ? '▾' : '▸'} {group.plantName} — {group.trayCount} trays, {group.totalUnits} plants
+                {isOpen(group) ? '▾' : '▸'} {group.plantName} — {group.trayCount} {group.trayCount === 1 ? 'tray' : 'trays'}, {group.totalUnits} {group.totalUnits === 1 ? 'plant' : 'plants'}
               </button>
               {isOpen(group) && (
                 <div className="stack nested-stack">
