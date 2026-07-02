@@ -2,11 +2,19 @@
 
 Browser prototype for The Garden Stall.
 
-Current version: `0.1.15-daily-summary-ui`
+Current version: `0.1.16-app-split`
 
 Current implemented slice:
 
 - Vite + React + JavaScript app shell
+- `App.jsx` has been split into smaller screen/component files so future UI work can be edited safely
+- shared UI helpers live in `prototype/src/components/ui.jsx`
+- stock list, tray row, price, display-zone, and reduced-area controls live in `prototype/src/components/StockLists.jsx`
+- setup flow screens live in `prototype/src/screens/SetupScreens.jsx`
+- trading screen lives in `prototype/src/screens/TradingScreen.jsx`
+- daily summary screen lives in `prototype/src/screens/DailySummary.jsx`
+- debug overlay lives in `prototype/src/components/DebugOverlay.jsx`
+- phase routing lives in `prototype/src/screens/PhaseRenderer.jsx`
 - static data foundation
 - phase loop skeleton
 - Day 0 wholesaler order
@@ -25,9 +33,9 @@ Current implemented slice:
 - missed-demand notes include the closest match and the score gap where useful
 - daily report captures an unsold stock summary before packdown
 - daily report captures next-order guidance built from leftovers, missed demand, pricing shape, and condition risk
+- Daily Summary now has direct What Did Not Sell and Next Order Guidance sections
 - Daily Summary headline note includes top unsold stock highlights and the first next-order clue
-- Markdown debug report includes a dedicated What Did Not Sell section
-- Markdown debug report now includes a dedicated Next Order Guidance section
+- Markdown debug report includes dedicated What Did Not Sell and Next Order Guidance sections
 - first-pass notebook discovery system
 - notebook entries unlock from observed daily outcomes
 - notebook entries currently cover display zones, pricing, drying, requests, and missed demand
@@ -88,7 +96,6 @@ This is not yet the full Prototype 0.1 gameplay loop.
 
 Still placeholder:
 
-- direct in-game Daily Summary cards for What Did Not Sell and Next Order Guidance
 - detailed weekly summary
 - notebook entries are readable feedback only, not skill bonuses yet
 - staff pressure metrics
