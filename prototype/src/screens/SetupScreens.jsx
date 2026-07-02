@@ -6,8 +6,31 @@ import { weekDayByNumber } from '../data/weekScript.js';
 import { calculateCart } from '../systems/orderSystem.js';
 import { getStockByLocation, getVanLoadStatus, getVanLoadSummary } from '../systems/stockSystem.js';
 import { getDisplayZoneSummary } from '../systems/displaySystem.js';
+import { buildEveningOrderFeedback } from '../systems/eveningFeedbackSystem.js';
 import { Card, money } from '../components/ui.jsx';
 import { ExpandableStockList, ReducedStockList, ZonePlacementButtons, ZoneUsagePanel } from '../components/StockLists.jsx';
+
+function EveningOrderFeedback({ state }) {
+  const feedback = buildEveningOrderFeedback(state);
+  return (
+    <div className="row-card column-card">
+      <p className="eyebrow">Stall notebook</p>
+      <h3>{feedback.title}</h3>
+      {feedback.lines.map((line) => <p className="fine-print" key={line}>• {line}</p>)}
+      {feedback.warnings.map((line) => <p className="fine-print capacity-warning" key={line}>• {line}</p>)}
+      {feedback.guidance.length > 0 && (
+        <div className="stack nested-stack">
+          {feedback.guidance.map((entry) => (
+            <article className="notebook-mini" key={`${entry.type}-${entry.summary}`}>
+              <strong>{entry.summary}</strong>
+              <p className="fine-print">{entry.reason}</p>
+            </article>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function WholesalerScreen({ state, dispatch }) {
   const listings = getSupplierListingsForDay(state.currentDay);
@@ -20,6 +43,7 @@ export function WholesalerScreen({ state, dispatch }) {
         <p className="eyebrow">County Plant Wholesale</p>
         <h2>{state.currentDay === 0 ? 'Opening Evening Order' : 'Evening Order'}</h2>
         <p className="muted">Choose stock for collection tomorrow morning. For the first run, try mixing colour, edible stock, and one giftable or showy item instead of buying only one kind of tray.</p>
+        <EveningOrderFeedback state={state} />
         <div className="listing-grid">
           {listings.map((listing) => {
             const plant = plantById[listing.plantId];
@@ -51,11 +75,11 @@ export function WholesalerScreen({ state, dispatch }) {
               <div key={item.id} className="row-card">
                 <div>
                   <strong>{plantById[item.plantId]?.displayName}</strong>
-                  <p className="fine-print">{item.count} × {item.batchLabel} ({item.quantity} units)</p>
+                  <p className="fine-print">{item.count} x {item.batchLabel} ({item.quantity} units)</p>
                 </div>
                 <div className="row-actions">
                   <span>{money(item.wholesaleCost * item.count)}</span>
-                  <button onClick={() => dispatch({ type: 'REMOVE_FROM_CART', listingId: item.id })}>−</button>
+                  <button onClick={() => dispatch({ type: 'REMOVE_FROM_CART', listingId: item.id })}>-</button>
                 </div>
               </div>
             ))}
