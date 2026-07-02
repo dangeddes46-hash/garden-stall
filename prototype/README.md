@@ -2,7 +2,7 @@
 
 Browser prototype for The Garden Stall.
 
-Current version: `0.1.12-readability-numbers`
+Current version: `0.1.13-daily-review-completeness`
 
 Current implemented slice:
 
@@ -22,7 +22,10 @@ Current implemented slice:
 - customer scoring now considers price sensitivity
 - pricing bands have been tuned to be less binary: bargain/reduced are less overpowering and premium is less punitive when stock is strong
 - trading logs include sale price band, unit price, score, and clearer reason text
-- missed-demand notes now include the closest match and the score gap where useful
+- missed-demand notes include the closest match and the score gap where useful
+- daily report now captures an unsold stock summary before packdown
+- Daily Summary headline note includes top unsold stock highlights
+- Markdown debug report includes a dedicated What Did Not Sell section
 - first-pass notebook discovery system
 - notebook entries unlock from observed daily outcomes
 - notebook entries currently cover display zones, pricing, drying, requests, and missed demand
