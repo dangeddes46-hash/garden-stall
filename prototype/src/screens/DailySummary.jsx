@@ -17,7 +17,7 @@ function buildSalesLines(report) {
 
   const lines = Object.values(groups)
     .sort((a, b) => b.revenue - a.revenue)
-    .map((entry) => `${entry.quantity} × ${entry.plantName} through passive trade (${money(entry.revenue)}).`);
+    .map((entry) => `${entry.quantity} x ${entry.plantName} through passive trade (${money(entry.revenue)}).`);
 
   const requestLines = (report?.requestLog ?? [])
     .filter((request) => (request.revenue ?? 0) > 0)
@@ -38,14 +38,27 @@ function buildUnsoldLines(report) {
   });
 }
 
+function usefulDisplayNotes(report) {
+  const soldUnits = (report?.tradingLog ?? []).reduce((sum, wave) => sum + (wave.sales ?? []).reduce((waveSum, sale) => waveSum + (sale.quantity ?? 0), 0), 0);
+  return (report?.displayNotes ?? []).filter((note) => {
+    const emptyDisplayNote = note.toLowerCase().includes('nothing is visible');
+    return !(emptyDisplayNote && soldUnits > 0);
+  });
+}
+
 function buildPressureLines(report) {
   const lines = [];
   const missedCount = report?.missedCount ?? 0;
-  if (missedCount > 0) lines.push(`${missedCount} missed demand note${missedCount === 1 ? '' : 's'} showed stock or placement gaps.`);
+  const soldLines = new Set((report?.tradingLog ?? []).flatMap((wave) => wave.sales ?? []).map((sale) => sale.plantName));
+  const unsoldNames = (report?.packedStockSummary ?? []).map((entry) => entry.plantName).filter((name) => !soldLines.has(name));
+
+  if (unsoldNames.length > 0) lines.push(`${unsoldNames.slice(0, 3).join(', ')} never really got a selling test; they were packed home unsold.`);
+  if (missedCount > 0) lines.push(`${missedCount} missed demand note${missedCount === 1 ? '' : 's'} showed stock, placement, or price gaps.`);
+  usefulDisplayNotes(report).forEach((note) => lines.push(note));
   (report?.pricingSummary?.notes ?? []).forEach((note) => lines.push(note));
   if ((report?.conditionSummary ?? []).length > 0) lines.push('Some visible stock lost freshness; check condition notes before ordering tomorrow.');
   if (lines.length === 0) lines.push('No obvious sales blockers were recorded today.');
-  return lines.slice(0, 4);
+  return [...new Set(lines)].slice(0, 5);
 }
 
 function buildOrderGuidanceLines(report) {
@@ -69,7 +82,7 @@ function buildTomorrowLines(report) {
   if (premiumSold === 0) lines.push('Try premium pricing only on good-condition stock in a strong zone.');
   if ((report?.conditionSummary ?? []).length > 0) lines.push('Water thirsty trays before later waves, but avoid repeated watering on the same batch.');
 
-  lines.push('Keep testing a simple mix: one colourful draw, one useful edible tray, and one giftable/showy item.' );
+  lines.push('Keep testing a simple mix: one colourful draw, one useful edible tray, and one giftable/showy item.');
   return [...new Set(lines)].slice(0, 5);
 }
 
@@ -127,7 +140,7 @@ export default function DailySummary({ state, dispatch }) {
         <div className="stack">
           {conditionSummary.map((entry, index) => (
             <article className="row-card column-card" key={`${entry.plantName}-${entry.timing}-${index}`}>
-              <strong>{entry.count} × {entry.plantName} {entry.timing}</strong>
+              <strong>{entry.count} x {entry.plantName} {entry.timing}</strong>
               <p className="fine-print">{entry.summary}</p>
             </article>
           ))}
