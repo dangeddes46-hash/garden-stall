@@ -2,7 +2,7 @@
 
 Browser prototype for The Garden Stall.
 
-Current version: `0.1.10-clarity-tuning`
+Current version: `0.1.11-smoke-test-polish`
 
 Current implemented slice:
 
@@ -21,22 +21,22 @@ Current implemented slice:
 - price band changes update unit price from the batch's base retail price
 - customer scoring now considers price sensitivity
 - trading logs include sale price band and unit price
-- daily summary includes basic pricing notes
 - first-pass notebook discovery system
 - notebook entries unlock from observed daily outcomes
 - notebook entries currently cover display zones, pricing, drying, requests, and missed demand
 - side-panel notebook groups discoveries by category
-- daily summary shows new notebook entries and the reason they unlocked
-- Markdown debug export includes notebook entries
+- daily summary now answers what sold, money earned, blockers, condition changes, notebook learning, and what to try tomorrow
+- Markdown debug export includes notebook entries and a daily review section
 - van capacity model: 6 tray spaces plus 6 loose/feature potted plants
-- van load buttons now disable with player-facing capacity reasons when the relevant space is full
-- display zone cards now show full zones and placement buttons disable before blocked debug spam is produced
+- van load buttons disable with player-facing capacity reasons when the relevant space is full
+- display zone cards show full zones and placement buttons disable before blocked debug spam is produced
 - loading and display movement work one tray/pot batch at a time
 - home, van, display, reduced, and request lists group by plant species and expand into individual trays/pots
 - species groups with fewer than 5 batches open by default; 5 or more start closed
 - visible stock watering is now per tray/pot, not global
 - repeated watering can set plants to `waterlogged`, shown to players as overwatered
-- overwatered visible stock now carries a light end-of-day condition risk if left on display
+- overwatered visible stock carries a light end-of-day condition risk if left on display
+- condition pressure thresholds have been lightly softened after local smoke-test feedback
 - basic home stock / van loadout flow
 - location, route, display, trading, and daily summary screens
 - display zones: Front Table, Floor / Crates, Feature Spot, and Reduced Area
@@ -49,6 +49,7 @@ Current implemented slice:
 - passive customer wave simulation
 - progressive wave-by-wave moisture/condition ticks during trading
 - condition events are compressed into player-facing summaries while raw per-batch detail remains in JSON and detailed debug reports
+- practical onboarding copy added to the opening order, van loadout, display setup, trading day, and daily summary screens
 - current stall remains visible during trading so drying can be checked before end of day
 - special request generation and scored recommendations
 - special request sales now also use the per-plant sale helper
@@ -65,6 +66,8 @@ cd prototype
 npm install
 npm run dev
 ```
+
+On Windows, `npm.cmd install` and `npm.cmd run dev` are also valid.
 
 Then open the local Vite URL shown in the terminal.
 
