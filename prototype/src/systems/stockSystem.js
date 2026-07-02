@@ -38,15 +38,34 @@ export function getVanLoadSummary(stockBatches) {
   }, { traySlots: 0, featurePots: 0, batchCount: 0 });
 }
 
-export function canLoadBatchToVan(stockBatches, batchId) {
+export function getVanLoadStatus(stockBatches, batchId) {
   const batch = stockBatches.find((item) => item.id === batchId);
-  if (!batch || batch.location !== 'home') return false;
-
   const current = getVanLoadSummary(stockBatches);
-  const incoming = getBatchVanLoad(batch);
+  if (!batch || batch.location !== 'home') {
+    return { canLoad: false, reason: 'Only home stock can be loaded.' };
+  }
 
-  return current.traySlots + incoming.traySlots <= VAN_LOAD_LIMITS.traySlots
-    && current.featurePots + incoming.featurePots <= VAN_LOAD_LIMITS.featurePots;
+  const incoming = getBatchVanLoad(batch);
+  const nextTraySlots = current.traySlots + incoming.traySlots;
+  const nextFeaturePots = current.featurePots + incoming.featurePots;
+  const trayOverflow = nextTraySlots > VAN_LOAD_LIMITS.traySlots;
+  const featureOverflow = nextFeaturePots > VAN_LOAD_LIMITS.featurePots;
+
+  if (trayOverflow && featureOverflow) {
+    return { canLoad: false, reason: 'Van tray space and feature-pot space are full.' };
+  }
+  if (trayOverflow) {
+    return { canLoad: false, reason: `Van tray space is full (${current.traySlots}/${VAN_LOAD_LIMITS.traySlots}).` };
+  }
+  if (featureOverflow) {
+    return { canLoad: false, reason: `Feature-pot space is full (${current.featurePots}/${VAN_LOAD_LIMITS.featurePots}).` };
+  }
+
+  return { canLoad: true, reason: 'Fits in the van.' };
+}
+
+export function canLoadBatchToVan(stockBatches, batchId) {
+  return getVanLoadStatus(stockBatches, batchId).canLoad;
 }
 
 export function moveStockBatch(stockBatches, batchId, nextLocation, zoneId = null) {
