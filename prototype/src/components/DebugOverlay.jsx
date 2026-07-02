@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PHASE_LABELS } from '../data/constants.js';
-import { createDebugExport, createMarkdownReport } from '../systems/reportSystem.js';
+import { createDebugExport, createMarkdownReport } from '../systems/reportSystemPatched.js';
 
 function NotebookPanel({ notebook, latestReport }) {
   const discoveries = notebook?.discoveries ?? [];
