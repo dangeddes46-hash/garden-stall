@@ -1,6 +1,7 @@
 import { getStockByLocation } from '../systems/stockSystem.js';
 import { getDisplayZoneSummary } from '../systems/displaySystem.js';
 import { describePriceBand } from '../systems/pricingSystem.js';
+import { getNextTradingCheckpoint, getTradingClockEntry, TRADING_DAY_SCHEDULE } from '../systems/tradingClockSystem.js';
 import { Card, money, zoneLabel } from '../components/ui.jsx';
 import { ExpandableStockList, ReducedStockList, ZonePlacementButtons, ZoneUsagePanel } from '../components/StockLists.jsx';
 
@@ -41,6 +42,46 @@ function SpecialRequestPanel({ state, dispatch }) {
   );
 }
 
+function TradingClockPanel({ state, dispatch, displaySummary }) {
+  const current = getTradingClockEntry(state.tradingClock);
+  const next = getNextTradingCheckpoint(state.tradingClock);
+  const waveCount = state.tradingWaveIndex ?? 0;
+  const packdownReady = state.tradingClock?.isComplete;
+  const checkpointButton = waveCount >= 4 ? 'Advance to packdown' : `Run ${next.timeLabel} checkpoint`;
+
+  return (
+    <Card>
+      <p className="eyebrow">Trading Day</p>
+      <h2>{current.timeLabel} — {current.title}</h2>
+      <p>{current.description}</p>
+      <div className="totals">
+        <div><span>Clock</span><strong>{current.timeLabel}</strong></div>
+        <div><span>Checkpoints run</span><strong>{waveCount} / 4</strong></div>
+        <div><span>Display</span><strong>{displaySummary.rating}</strong></div>
+        <div><span>Visible batches</span><strong>{displaySummary.usedSlots}</strong></div>
+      </div>
+      <div className="stack">
+        <h3>Day schedule</h3>
+        {TRADING_DAY_SCHEDULE.map((entry) => {
+          const done = entry.index <= (state.tradingClock?.currentIndex ?? 0);
+          const nextUp = entry.index === (state.tradingClock?.nextCheckpointIndex ?? 1);
+          return (
+            <p className="fine-print" key={entry.timeLabel}>
+              {done ? '✓' : nextUp ? '→' : '•'} <strong>{entry.timeLabel}</strong> {entry.title} — {entry.description}
+            </p>
+          );
+        })}
+      </div>
+      <ZoneUsagePanel displaySummary={displaySummary} />
+      <div className="button-row">
+        <button disabled={packdownReady} onClick={() => dispatch({ type: 'RUN_TRADING_CHECKPOINT' })}>{checkpointButton}</button>
+        <button className="secondary" onClick={() => dispatch({ type: 'END_TRADING_DAY' })}>End trading day</button>
+      </div>
+      <p className="fine-print">This is still a testable checkpoint clock, not a live unattended timer. Pause/speed controls come next.</p>
+    </Card>
+  );
+}
+
 export default function TradingScreen({ state, dispatch }) {
   const displaySummary = getDisplayZoneSummary(state.stockBatches);
   const displayStock = getStockByLocation(state.stockBatches, 'display');
@@ -48,21 +89,7 @@ export default function TradingScreen({ state, dispatch }) {
   return (
     <div className="screen-grid">
       <div className="stack">
-        <Card>
-          <p className="eyebrow">Trading Day</p>
-          <h2>Passive customer waves</h2>
-          <p>Run each wave, then glance at the Current Stall before the next one. Thirsty trays can slip during the day, and watering helps if you catch them early.</p>
-          <div className="totals">
-            <div><span>Next wave</span><strong>{(state.tradingWaveIndex ?? 0) + 1}</strong></div>
-            <div><span>Display</span><strong>{displaySummary.rating}</strong></div>
-            <div><span>Visible batches</span><strong>{displaySummary.usedSlots}</strong></div>
-          </div>
-          <ZoneUsagePanel displaySummary={displaySummary} />
-          <div className="button-row">
-            <button disabled={(state.tradingWaveIndex ?? 0) >= 4} onClick={() => dispatch({ type: 'RUN_CUSTOMER_WAVE' })}>Simulate customer wave</button>
-            <button className="secondary" onClick={() => dispatch({ type: 'END_TRADING_DAY' })}>End trading day</button>
-          </div>
-        </Card>
+        <TradingClockPanel state={state} dispatch={dispatch} displaySummary={displaySummary} />
         <SpecialRequestPanel state={state} dispatch={dispatch} />
       </div>
       <div className="stack">
@@ -85,12 +112,12 @@ export default function TradingScreen({ state, dispatch }) {
         </Card>
         <Card>
           <h2>Trading Log</h2>
-          {state.tradingLog.length === 0 ? <p className="muted">No waves simulated yet.</p> : (
+          {state.tradingLog.length === 0 ? <p className="muted">No checkpoints run yet.</p> : (
             <div className="stack">
               {state.tradingLog.map((wave, index) => (
                 <article className="row-card column-card" key={`${wave.wave}-${index}`}>
                   <div>
-                    <strong>{wave.wave} · {money(wave.revenue)} revenue · Display {wave.displayRating}</strong>
+                    <strong>{wave.timeLabel ? `${wave.timeLabel} · ${wave.checkpointTitle} · ` : ''}{wave.wave} · {money(wave.revenue)} revenue · Display {wave.displayRating}</strong>
                     {wave.sales.map((sale, saleIndex) => <p className="fine-print" key={`${sale.customerName}-${saleIndex}`}>{sale.customerName} bought {sale.quantity} × {sale.plantName}{sale.zoneId ? ` from ${zoneLabel(sale.zoneId)}` : ''} at {describePriceBand(sale.priceBand ?? 'normal')} price ({money(sale.unitPrice)} each): {sale.reason}</p>)}
                     {wave.missedDemand.map((note) => <p className="fine-print" key={note}>Missed: {note}</p>)}
                     {wave.priceNotes?.map((note) => <p className="fine-print" key={note}>Price note: {note}</p>)}
