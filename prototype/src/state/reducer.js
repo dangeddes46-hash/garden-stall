@@ -9,6 +9,7 @@ import { summarizePricingFromTradingLog } from '../systems/pricingSystem.js';
 import { buildNotebookDiscoveriesForDay, createNotebookDailyNotes, mergeNotebookDiscoveries } from '../systems/notebookSystem.js';
 import { applyEndOfDayConditionPressure, applyTradingWaveConditionPressure, summarizeConditionEvents, summarizeWateredStock, waterStockBatch } from '../systems/conditionSystem.js';
 import { advanceTradingClock, createTradingClock, getNextTradingCheckpoint, setTradingClockMode } from '../systems/tradingClockSystem.js';
+import { autoloadVan, autodisplayStock } from '../systems/autoStockSystem.js';
 import { initialState } from './initialState.js';
 
 function log(state, message) {
@@ -253,6 +254,11 @@ export function reducer(state, action) {
       return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'van') }, 'Loaded one tray batch into van.');
     }
 
+    case 'AUTOLOAD_VAN': {
+      const result = autoloadVan(state.stockBatches);
+      return log({ ...state, stockBatches: result.stockBatches }, `Autoloaded ${result.loadedCount} varied batch${result.loadedCount === 1 ? '' : 'es'} into the van, prioritising older plants.`);
+    }
+
     case 'UNLOAD_TO_HOME':
       return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'home') }, 'Moved one tray batch back to home stock.');
 
@@ -266,6 +272,11 @@ export function reducer(state, action) {
       const zoneId = action.zoneId ?? 'front-table';
       if (!canPlaceBatchInDisplayZone(state.stockBatches, zoneId)) return log(state, `Display blocked: ${zoneId} is full.`);
       return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'display', zoneId) }, `Placed one tray batch in ${zoneId}.`);
+    }
+
+    case 'AUTODISPLAY_STOCK': {
+      const result = autodisplayStock(state.stockBatches);
+      return log({ ...state, stockBatches: result.stockBatches }, `Autodisplayed ${result.placedCount} varied batch${result.placedCount === 1 ? '' : 'es'}, prioritising newer plants and premium-value spots.`);
     }
 
     case 'MOVE_TO_REDUCED': {
