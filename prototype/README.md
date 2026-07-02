@@ -2,7 +2,7 @@
 
 Browser prototype for The Garden Stall.
 
-Current version: `0.1.14-next-order-guidance`
+Current version: `0.1.15-daily-summary-ui`
 
 Current implemented slice:
 
@@ -24,9 +24,10 @@ Current implemented slice:
 - trading logs include sale price band, unit price, score, and clearer reason text
 - missed-demand notes include the closest match and the score gap where useful
 - daily report captures an unsold stock summary before packdown
-- daily report now also captures next-order guidance built from leftovers, missed demand, pricing shape, and condition risk
+- daily report captures next-order guidance built from leftovers, missed demand, pricing shape, and condition risk
 - Daily Summary headline note includes top unsold stock highlights and the first next-order clue
 - Markdown debug report includes a dedicated What Did Not Sell section
+- Markdown debug report now includes a dedicated Next Order Guidance section
 - first-pass notebook discovery system
 - notebook entries unlock from observed daily outcomes
 - notebook entries currently cover display zones, pricing, drying, requests, and missed demand
@@ -87,9 +88,10 @@ This is not yet the full Prototype 0.1 gameplay loop.
 
 Still placeholder:
 
+- direct in-game Daily Summary cards for What Did Not Sell and Next Order Guidance
 - detailed weekly summary
 - notebook entries are readable feedback only, not skill bonuses yet
 - staff pressure metrics
-- final art and visual direction
+- final art and visual polish
 
 No backend, save/load, TypeScript, drag-and-drop, staff system, or final art dependency has been added.
