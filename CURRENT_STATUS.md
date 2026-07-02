@@ -6,7 +6,7 @@ Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`0.1.10-clarity-tuning`
+`0.1.11-smoke-test-polish`
 
 ## Current Source of Truth
 
@@ -66,14 +66,16 @@ Implemented:
 - home, van, display, reduced, and request recommendation lists group by plant species and expand into individual tray/pot cards
 - species groups with fewer than 5 batches open by default; 5 or more start closed
 - visible stock watering is per tray/pot, not global
-- repeated watering can set plant moisture to `waterlogged`; the player-facing label is now overwatered
-- overwatered visible stock now has a light end-of-day condition risk if left on display
+- repeated watering can set plant moisture to `waterlogged`; the player-facing label is overwatered
+- overwatered visible stock has a light end-of-day condition risk if left on display
+- condition pressure thresholds were lightly softened after successful local smoke testing
 - van capacity model: 6 tray spaces plus 6 loose/feature potted plants
 - van load buttons disable with clear capacity reasons when tray or feature-pot space is full
 - location, van loadout, route, display, trading, and daily summary screens
 - display zones: Front Table, Floor / Crates, Feature Spot, and Reduced Area
 - zone capacity enforcement per area
-- full display zones are now labelled and placement buttons disable before debug spam is created
+- full display zones are labelled and placement buttons disable before debug spam is created
+- onboarding copy now gently explains first order mix, van capacity, display-zone roles, watering risk, and trading-day checks
 - van stock can be placed directly into a selected display zone
 - visible stock can move between display zones
 - display score considers zone fit as well as fullness, colour, giftability, tired stock, and reduced-stock pressure
@@ -92,8 +94,9 @@ Implemented:
 - first-pass notebook discovery system based on observed daily outcomes
 - notebook discoveries for display zones, pricing, drying, requests, and missed demand
 - side-panel notebook grouped by category
-- daily summary shows newly unlocked notebook entries and why they unlocked
+- daily summary now answers what sold, what made money, what held sales back, condition changes, notebook learning, and what to try tomorrow
 - notebook entries included in JSON and Markdown debug exports
+- Markdown export now includes a Daily Review section plus current state, pending orders, stock, requests, pricing, notebook, condition summary, detailed condition changes, and debug log
 - end-of-day condition wrap-up based on display exposure, moisture, plant risk, and weather stress
 - condition, pricing, and notebook summaries in daily report, JSON export, and Markdown debug report
 - debug/admin panel with cash tools, phase jump, next-day jump, reset, JSON export, and Markdown report export
@@ -107,19 +110,18 @@ Still placeholder:
 
 ## Current Priority
 
-Run the `/prototype/` app locally after pulling latest changes, confirm capacity buttons, compressed condition summaries, overwatered wording, and debug exports all compile and read cleanly.
+Run the `/prototype/` app locally after pulling latest changes and confirm the accepted smoke-test route still works with the clearer Daily Summary and Markdown export.
 
 ## Recommended Next Actions
 
-1. Run `git pull`, then `cd prototype && npm run dev` locally.
+1. Run `git pull`, then `cd prototype && npm.cmd install && npm.cmd run dev` on Windows, or `cd prototype && npm install && npm run dev` elsewhere.
 2. Reset the prototype from the debug panel.
-3. Order mixed stock, collect, and deliberately overfill the van to confirm load buttons disable with capacity reasons.
-4. Fill a display zone and confirm its placement buttons show as full/disabled.
-5. Water one visible batch twice to create overwatered stock, then leave it visible through end of day.
-6. Simulate several customer waves and answer at least one special request.
-7. End the day.
-8. Confirm trading and daily summaries show grouped condition notes rather than repeated tray spam.
-9. Export JSON and Markdown and confirm raw per-batch condition detail is still available.
+3. Order mixed stock, collect, and load the van.
+4. Deliberately fill either tray space or feature-pot space to confirm blocked load buttons clearly explain why.
+5. Pick a location and fill at least one display zone to confirm full-zone button wording remains clear.
+6. Run several customer waves, water at least one drying tray, and answer one special request.
+7. End the day and read the Daily Summary sections: What sold, Money, What held sales back, Condition notes, Notebook feedback, Try tomorrow.
+8. Export JSON and Markdown and confirm raw condition detail remains available.
 
 ## Known Risks
 
@@ -130,8 +132,8 @@ Run the `/prototype/` app locally after pulling latest changes, confirm capacity
 - Notebook discovery rules are deliberately simple and may need quick tuning after playtest.
 - Notebook entries currently provide readable feedback only; they do not yet unlock skill bonuses.
 - Special request scoring currently uses known good/acceptable/poor/bad plant lists, not deeper explanation logic.
-- Progressive condition pressure has just been softened; it may still need tuning after local playtest.
-- Overwatered stock now has a light end-of-day condition risk, but no sale-score penalty yet.
+- Progressive condition pressure has been lightly softened; it may still need tuning after local playtest.
+- Overwatered stock has a light end-of-day condition risk, but no sale-score penalty yet.
 - Zone scoring is intentionally first-pass and may need balancing.
 - Real-time trading should remain a testable wave/timer system first, with pauseable menus and strong debug controls.
 - Daily and weekly summaries must explain outcomes clearly or the loop will feel opaque.
