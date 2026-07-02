@@ -81,8 +81,8 @@ export function getDisplayZoneSummary(stockBatches) {
   const colourScore = Math.min(2, colourCount);
   const giftScore = Math.min(1, giftableCount);
   const tiredPenalty = tiredCount * 2;
-  const reducedPenalty = Math.max(0, reducedCount - 1);
-  const rawScore = fullnessScore + colourScore + giftScore + Math.min(3, zoneFitScore) - tiredPenalty - reducedPenalty;
+  const reducedPenalty = Math.max(0, reducedCount - 2);
+  const rawScore = fullnessScore + colourScore + giftScore + Math.min(4, zoneFitScore) - tiredPenalty - reducedPenalty;
   const score = Math.max(0, Math.min(10, rawScore));
 
   let rating = 'poor';
@@ -92,13 +92,13 @@ export function getDisplayZoneSummary(stockBatches) {
 
   const notes = [];
   if (usedSlots === 0) notes.push('Nothing is visible yet. Customers cannot buy what they cannot see.');
-  if (usedSlots > 0 && usedSlots < 3) notes.push('The stall still looks a bit gappy.');
+  if (usedSlots > 0 && usedSlots < 3) notes.push('The stall still looks a bit gappy. Three or more visible batches usually reads better.');
   if (colourCount > 0) notes.push('Visible colour makes the stall more inviting.');
   if (giftableCount > 0) notes.push('Giftable stock gives impulse buyers something obvious to pick up.');
   if (zoneFitScore > 1) notes.push('Some stock is sitting in a helpful display zone.');
   if (zoneFitScore < 0) notes.push('Some stock may be in the wrong display zone.');
-  if (tiredCount > 0) notes.push('Tired stock drags down the display.');
-  if (reducedCount > 1) notes.push('Too much reduced stock can make the stall feel picked over.');
+  if (tiredCount > 0) notes.push('Tired stock drags down the display. Consider reducing it or moving it away from the best spots.');
+  if (reducedCount > 2) notes.push('Too much reduced stock can make the stall feel picked over.');
 
   return {
     displayed,
@@ -116,7 +116,7 @@ export function getDisplayZoneSummary(stockBatches) {
 export function getDisplaySaleModifier(displaySummary) {
   if (displaySummary.rating === 'strong') return 2;
   if (displaySummary.rating === 'good') return 1;
-  if (displaySummary.rating === 'poor') return -2;
+  if (displaySummary.rating === 'poor') return -1.5;
   return 0;
 }
 
@@ -141,7 +141,7 @@ export function getBatchZoneSaleModifier(batch, archetype) {
   }
 
   if (zoneId === 'reduced-area') {
-    return archetype?.reducedInterest === 'high' ? 2 : -1;
+    return archetype?.reducedInterest === 'high' ? 1.5 : -0.5;
   }
 
   return 0;
