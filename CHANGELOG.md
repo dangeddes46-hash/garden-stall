@@ -1,5 +1,28 @@
 # Changelog — The Garden Stall
 
+## 2026-07-02 — Clarity tuning
+
+Polished the existing Prototype 0.1 loop without adding a new major system.
+
+Changed:
+
+- Current version is now `0.1.10-clarity-tuning`.
+- Condition events are now compressed into grouped player-facing notes in the trading log and daily summary.
+- Raw per-batch condition events remain available in JSON export, state `conditionLog`, daily reports, and a detailed Markdown debug report section.
+- Van load buttons now disable with clear capacity reasons when tray or feature-pot space is full.
+- Display zones now show full status and zone placement buttons disable before repeated blocked debug messages are generated.
+- Player-facing moisture text now describes `waterlogged` as overwatered.
+- Overwatered visible stock now has a light end-of-day condition risk if left on display.
+- Wave/day drying pressure for moderate/thirsty stock was softened so repeated Busy Lizzie drying should be less noisy.
+
+Still not added:
+
+- staff implementation
+- upgrades
+- save/load
+- final art dependency
+- new major gameplay systems
+
 ## 2026-07-01 — Notebook feedback
 
 Added a first-pass notebook feedback system so the prototype can explain what the player learned from actual trading outcomes.
