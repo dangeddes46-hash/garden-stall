@@ -29,7 +29,7 @@ function buildSalesLines(report) {
 
   const passiveLines = Object.values(groups)
     .sort((a, b) => b.revenue - a.revenue)
-    .map((entry) => `- ${entry.quantity} × ${entry.plantName} through passive trade (£${entry.revenue.toFixed(2)})`);
+    .map((entry) => `- ${entry.quantity} x ${entry.plantName} through passive trade (£${entry.revenue.toFixed(2)})`);
 
   const requestLines = (report?.requestLog ?? [])
     .filter((request) => (request.revenue ?? 0) > 0)
@@ -59,6 +59,12 @@ function buildPressureLines(report) {
   (report?.pricingSummary?.notes ?? []).slice(0, 3).forEach((note) => lines.push(`- ${note}`));
   if ((report?.conditionSummary ?? []).length > 0) lines.push('- Some visible stock lost freshness; check condition notes before ordering tomorrow');
   return lines.length ? [...new Set(lines)].slice(0, 8).join('\n') : '- No obvious sales blockers were recorded today';
+}
+
+function buildOrderGuidanceLines(report) {
+  const guidance = report?.orderGuidance ?? [];
+  if (guidance.length === 0) return '- No next-order guidance was generated';
+  return guidance.map((entry) => `- ${entry.summary} (${entry.reason})`).join('\n');
 }
 
 function buildTomorrowLines(report) {
@@ -112,7 +118,7 @@ export function createMarkdownReport(state) {
     : '- No pending orders';
 
   const requestLines = state.requestLog?.length
-    ? state.requestLog.map((request) => `- ${request.requestName}: ${request.outcome}, ${request.plantName}, ${describePriceBand(request.priceBand ?? 'normal')}, £${request.revenue.toFixed(2)} — ${request.reason}`).join('\n')
+    ? state.requestLog.map((request) => `- ${request.requestName}: ${request.outcome}, ${request.plantName}, ${describePriceBand(request.priceBand ?? 'normal')}, £${request.revenue.toFixed(2)} - ${request.reason}`).join('\n')
     : '- No special requests resolved yet';
 
   const conditionSummary = report?.conditionSummary ?? summarizeConditionEvents(state.conditionLog ?? []);
@@ -121,7 +127,7 @@ export function createMarkdownReport(state) {
     : '- No condition changes recorded yet';
 
   const rawConditionLines = state.conditionLog?.length
-    ? state.conditionLog.map((event) => `- ${event.timing ?? 'unknown'}: ${event.plantName}: ${event.fromCondition} → ${event.toCondition}; ${describeMoistureForPlayer(event.fromMoisture)} → ${describeMoistureForPlayer(event.toMoisture)}; ${event.reason}`).join('\n')
+    ? state.conditionLog.map((event) => `- ${event.timing ?? 'unknown'}: ${event.plantName}: ${event.fromCondition} to ${event.toCondition}; ${describeMoistureForPlayer(event.fromMoisture)} to ${describeMoistureForPlayer(event.toMoisture)}; ${event.reason}`).join('\n')
     : '- No raw condition changes recorded yet';
 
   const pricingLines = report?.pricingSummary?.notes?.length
@@ -148,6 +154,7 @@ export function createMarkdownReport(state) {
     `### What Did Not Sell\n\n${buildUnsoldLines(report)}\n\n` +
     `### Money\n\n${moneyLines}\n\n` +
     `### What Held Sales Back\n\n${buildPressureLines(report)}\n\n` +
+    `### Next Order Guidance\n\n${buildOrderGuidanceLines(report)}\n\n` +
     `### Try Tomorrow\n\n${buildTomorrowLines(report)}\n\n` +
     `## Pending Orders\n\n${orderLines}\n\n` +
     `## Stock Batches\n\n${stockLines}\n\n` +
