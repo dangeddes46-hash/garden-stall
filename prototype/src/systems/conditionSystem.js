@@ -36,19 +36,19 @@ function conditionPressureForBatch(batch, weather, intensity = 'day') {
   if (exposed) {
     if (intensity === 'wave') {
       moistureSteps += thirsty || dryingModifier >= 1.1 ? 1 : 0;
-      if (moderateMoisture && dryingModifier >= 1.15) moistureSteps += 1;
+      if (moderateMoisture && dryingModifier >= 1.2) moistureSteps += 1;
       if (dryTolerant) moistureSteps = 0;
       reasons.push('spent part of the day exposed on display');
     } else {
       moistureSteps += 1;
-      if (dryingModifier >= 1.1 || thirsty) moistureSteps += 1;
-      if (dryingModifier >= 1.25 || (thirsty && stress === 'medium')) moistureSteps += 1;
-      if (moderateMoisture && dryingModifier >= 1.2) moistureSteps += 1;
+      if (dryingModifier >= 1.15 || thirsty) moistureSteps += 1;
+      if (dryingModifier >= 1.3 || (thirsty && stress === 'medium')) moistureSteps += 1;
+      if (moderateMoisture && dryingModifier >= 1.25) moistureSteps += 1;
       if (dryTolerant) moistureSteps = Math.max(1, moistureSteps - 1);
       reasons.push('spent the day on display');
     }
   } else if (inVan && intensity === 'day') {
-    moistureSteps += dryingModifier >= 1.1 ? 1 : 0;
+    moistureSteps += dryingModifier >= 1.15 ? 1 : 0;
     if (moistureSteps > 0) reasons.push('spent the day in the van');
   }
 
@@ -58,7 +58,7 @@ function conditionPressureForBatch(batch, weather, intensity = 'day') {
     reasons.push('weather/display stress affected fragile stock');
   }
 
-  if (exposed && batch.moisture === 'bone-dry' && intensity === 'day') {
+  if (exposed && batch.moisture === 'bone-dry' && intensity === 'day' && (highRisk || stress === 'medium')) {
     conditionSteps += 1;
     reasons.push('was already bone-dry');
   }
@@ -68,7 +68,7 @@ function conditionPressureForBatch(batch, weather, intensity = 'day') {
     reasons.push('was already tired in reduced stock');
   }
 
-  if (moderateRisk && exposed && stress === 'medium' && driedAlready && intensity === 'day') {
+  if (moderateRisk && exposed && stress === 'medium' && batch.moisture === 'bone-dry' && intensity === 'day' && !highRisk) {
     conditionSteps += 1;
     reasons.push('moderate-risk stock dried on a stressful day');
   }
