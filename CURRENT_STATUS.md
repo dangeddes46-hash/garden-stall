@@ -6,7 +6,7 @@ Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`0.1.16-app-split`
+`0.1.17-trading-clock-skeleton`
 
 ## Current Source of Truth
 
@@ -57,6 +57,11 @@ Implemented:
 - daily summary screen lives in `prototype/src/screens/DailySummary.jsx`
 - debug overlay lives in `prototype/src/components/DebugOverlay.jsx`
 - phase routing lives in `prototype/src/screens/PhaseRenderer.jsx`
+- trading day now has a visible checkpoint clock, backed by `prototype/src/systems/tradingClockSystem.js`
+- checkpoint schedule: 09:00 opening, 10:00 morning browsers, 11:30 late-morning trade, 13:00 lunch/request window, 14:30 afternoon push, 16:00 packdown ready
+- existing passive customer waves now run as time-labelled trading checkpoints
+- trading log entries now include checkpoint time, title, and description metadata
+- trading-clock state resets cleanly when entering a new trading day, debug-jumping to trading, advancing to the next day, or opening the next evening order
 - static data modules for plants, locations, supplier listings, tray profiles, customer archetypes, customer seeds, special requests, notebook discoveries, and first-week script
 - small version tag in the top header, backed by `state.prototypeVersion`
 - reducer-based phase loop skeleton
@@ -121,6 +126,8 @@ Implemented:
 
 Still placeholder:
 
+- real unattended timer
+- pause/speed controls
 - detailed weekly summary
 - notebook entries are readable feedback only, not skill bonuses yet
 - staff pressure metrics
@@ -128,21 +135,24 @@ Still placeholder:
 
 ## Current Priority
 
-Run the refactored `/prototype/` app locally, confirm the split compiles, and smoke-test one full day. If clean, move next to the real-time trading-day skeleton.
+Run the `/prototype/` app locally, confirm the trading-clock skeleton compiles, and smoke-test one full day through all trading checkpoints.
 
 ## Recommended Next Actions
 
 1. Run `git pull`, then `cd prototype && npm.cmd install && npm.cmd run dev` on Windows, or `cd prototype && npm install && npm run dev` elsewhere.
 2. Reset the prototype from the debug panel.
-3. Run through order, collection, location, van loadout, display setup, trading, daily summary, and export.
-4. Confirm the Daily Summary screen directly shows What Did Not Sell and Next Order Guidance.
-5. Confirm JSON and Markdown exports still work.
-6. If the refactor smoke-test is clean, begin real-time trading-day skeleton next.
+3. Run through order, collection, location, van loadout, display setup, and trading.
+4. Confirm the Trading Day screen shows a 09:00 to 16:00 schedule.
+5. Press each trading checkpoint and confirm the log entries include times/titles.
+6. Confirm the fifth button advances to packdown ready rather than creating a fifth sales wave.
+7. End the day and confirm Daily Summary, JSON export, and Markdown export still work.
+8. If clean, add pause/speed/debug controls next.
 
 ## Known Risks
 
 - This latest code pass has not yet been run in a local Vite environment by the Builder window.
-- The App split is broad and should be smoke-tested immediately for import/export mistakes.
+- The trading clock is a checkpoint skeleton, not a live unattended timer yet.
+- The fifth checkpoint is packdown-readiness only and should not create another sales wave.
 - Batch wholesale costs are rough estimates after moving to larger physical tray quantities.
 - Passive customer scoring is deliberately simple and may need quick tuning.
 - Premium/reduced/bargain tuning is still heuristic and needs local playtest feel.
