@@ -8,6 +8,7 @@ import { pickSpecialRequest, scoreSpecialRequest } from '../systems/requestSyste
 import { summarizePricingFromTradingLog } from '../systems/pricingSystem.js';
 import { buildNotebookDiscoveriesForDay, createNotebookDailyNotes, mergeNotebookDiscoveries } from '../systems/notebookSystem.js';
 import { applyEndOfDayConditionPressure, applyTradingWaveConditionPressure, summarizeConditionEvents, summarizeWateredStock, waterStockBatch } from '../systems/conditionSystem.js';
+import { advanceTradingClock, createTradingClock, getNextTradingCheckpoint } from '../systems/tradingClockSystem.js';
 import { initialState } from './initialState.js';
 
 function log(state, message) {
@@ -122,6 +123,42 @@ function nextSetupPhase(phase) {
   return index >= 0 ? order[index + 1] : null;
 }
 
+function runTradingCheckpoint(state) {
+  if (state.phase !== PHASES.TRADING) return log(state, 'Trading checkpoint blocked: not in trading phase.');
+
+  const nextCheckpoint = getNextTradingCheckpoint(state.tradingClock);
+  const nextClock = advanceTradingClock(state.tradingClock);
+
+  if ((state.tradingWaveIndex ?? 0) >= 4) {
+    return log({
+      ...state,
+      tradingClock: nextClock
+    }, `Advanced trading clock to ${nextCheckpoint.timeLabel}: ${nextCheckpoint.title}.`);
+  }
+
+  const result = simulateCustomerWave(state);
+  const waveNumber = (state.tradingWaveIndex ?? 0) + 1;
+  const conditionResult = applyTradingWaveConditionPressure(result.stateChanges.stockBatches ?? state.stockBatches, state.selectedWeather, waveNumber);
+  const conditionSummary = summarizeConditionEvents(conditionResult.conditionEvents);
+  const timedReport = {
+    ...result.report,
+    timeLabel: nextCheckpoint.timeLabel,
+    checkpointTitle: nextCheckpoint.title,
+    checkpointDescription: nextCheckpoint.description,
+    conditionEvents: conditionResult.conditionEvents,
+    conditionSummary
+  };
+
+  return log({
+    ...state,
+    ...result.stateChanges,
+    tradingClock: nextClock,
+    stockBatches: conditionResult.stockBatches,
+    conditionLog: [...conditionResult.conditionEvents, ...(state.conditionLog ?? [])].slice(0, 80),
+    tradingLog: [timedReport, ...state.tradingLog].slice(0, 12)
+  }, `${nextCheckpoint.timeLabel} ${nextCheckpoint.title}: ${result.report.wave} produced £${result.report.revenue.toFixed(2)} revenue and ${conditionSummary.length} condition notes.`);
+}
+
 export function reducer(state, action) {
   switch (action.type) {
     case 'ADD_TO_CART': {
@@ -156,6 +193,7 @@ export function reducer(state, action) {
         cart: [],
         currentDay: state.currentDay === 0 ? 1 : state.currentDay + 1,
         phase: PHASES.MORNING_COLLECTION,
+        tradingClock: createTradingClock(),
         tradingWaveIndex: 0,
         tradingLog: [],
         activeRequest: null,
@@ -182,7 +220,11 @@ export function reducer(state, action) {
       if (state.phase === PHASES.MORNING_COLLECTION) return log(state, 'Collect pending orders before advancing.');
       const next = nextSetupPhase(state.phase);
       if (!next) return state;
-      return log({ ...state, phase: next }, `Advanced to ${next}.`);
+      return log({
+        ...state,
+        phase: next,
+        tradingClock: next === PHASES.TRADING ? createTradingClock() : state.tradingClock
+      }, `Advanced to ${next}.`);
     }
 
     case 'SELECT_LOCATION':
@@ -239,20 +281,11 @@ export function reducer(state, action) {
       return log({ ...state, stockBatches: watered.stockBatches }, `Watered ${watered.changedCount} plants in one tray batch.`);
     }
 
-    case 'RUN_CUSTOMER_WAVE': {
-      if (state.phase !== PHASES.TRADING) return log(state, 'Customer wave blocked: not in trading phase.');
-      const result = simulateCustomerWave(state);
-      const waveNumber = (state.tradingWaveIndex ?? 0) + 1;
-      const conditionResult = applyTradingWaveConditionPressure(result.stateChanges.stockBatches ?? state.stockBatches, state.selectedWeather, waveNumber);
-      const conditionSummary = summarizeConditionEvents(conditionResult.conditionEvents);
-      return log({
-        ...state,
-        ...result.stateChanges,
-        stockBatches: conditionResult.stockBatches,
-        conditionLog: [...conditionResult.conditionEvents, ...(state.conditionLog ?? [])].slice(0, 80),
-        tradingLog: [{ ...result.report, conditionEvents: conditionResult.conditionEvents, conditionSummary }, ...state.tradingLog].slice(0, 12)
-      }, `Simulated ${result.report.wave} wave: £${result.report.revenue.toFixed(2)} revenue, ${conditionSummary.length} condition notes.`);
-    }
+    case 'RUN_TRADING_CHECKPOINT':
+      return runTradingCheckpoint(state);
+
+    case 'RUN_CUSTOMER_WAVE':
+      return runTradingCheckpoint(state);
 
     case 'GENERATE_SPECIAL_REQUEST': {
       if (state.phase !== PHASES.TRADING) return log(state, 'Special request blocked: not in trading phase.');
@@ -299,6 +332,7 @@ export function reducer(state, action) {
         salesCount,
         requestCount: state.requestLog.length,
         missedCount,
+        tradingClock: state.tradingClock,
         tradingLog: state.tradingLog,
         requestLog: state.requestLog,
         conditionEvents,
@@ -336,13 +370,17 @@ export function reducer(state, action) {
     }
 
     case 'START_EVENING_ORDER':
-      return log({ ...state, phase: PHASES.EVENING_ORDER }, 'Opened evening wholesaler order.');
+      return log({ ...state, phase: PHASES.EVENING_ORDER, tradingClock: createTradingClock() }, 'Opened evening wholesaler order.');
 
     case 'DEBUG_ADD_CASH':
       return log({ ...state, cash: state.cash + action.amount }, `Debug added £${action.amount}.`);
 
     case 'DEBUG_JUMP_PHASE':
-      return log({ ...state, phase: action.phase }, `Debug jumped to ${action.phase}.`);
+      return log({
+        ...state,
+        phase: action.phase,
+        tradingClock: action.phase === PHASES.TRADING ? createTradingClock() : state.tradingClock
+      }, `Debug jumped to ${action.phase}.`);
 
     case 'DEBUG_NEXT_DAY':
       return log({
@@ -351,6 +389,7 @@ export function reducer(state, action) {
         phase: PHASES.MORNING_COLLECTION,
         selectedLocationId: null,
         selectedWeather: weekDayByNumber[Math.min(7, state.currentDay + 1)]?.weather ?? null,
+        tradingClock: createTradingClock(),
         tradingWaveIndex: 0,
         tradingLog: [],
         activeRequest: null,
