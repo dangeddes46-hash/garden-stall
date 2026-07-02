@@ -1,5 +1,28 @@
 # Changelog — The Garden Stall
 
+## 2026-07-02 — Smoke-test polish
+
+Polished the accepted 0.1.10 smoke-test route without adding a new major system.
+
+Changed:
+
+- Current version is now `0.1.11-smoke-test-polish`.
+- Daily Summary now has clearer sections for what sold, money, blockers, condition notes, notebook learning, and what to try tomorrow.
+- Markdown export now includes a Daily Review section designed for pasting back into review chats.
+- Opening order, van loadout, display setup, trading day, and daily summary screens now include light practical onboarding copy.
+- Van/display disabled button wording was tightened from generic blocked actions toward clearer `No van space` / `full` reasons.
+- Condition pressure thresholds were lightly softened so ordinary days are less likely to create repeated punishment walls.
+- Thirsty stock still dries noticeably, failed watering still matters, and overwatered stock remains a light end-of-day risk only.
+
+Still not added:
+
+- staff implementation
+- upgrades
+- save/load
+- drag-and-drop display
+- final art dependency
+- new major gameplay systems
+
 ## 2026-07-02 — Clarity tuning
 
 Polished the existing Prototype 0.1 loop without adding a new major system.
