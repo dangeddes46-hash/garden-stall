@@ -37,12 +37,38 @@ export const TRADING_DAY_SCHEDULE = [
   }
 ];
 
+export const TRADING_CLOCK_MODES = {
+  paused: {
+    id: 'paused',
+    label: 'Paused',
+    note: 'Planning mode. The clock will not move unless you manually run a checkpoint.'
+  },
+  step: {
+    id: 'step',
+    label: 'Step',
+    note: 'Testing mode. Run one checkpoint at a time.'
+  },
+  fast: {
+    id: 'fast',
+    label: 'Fast',
+    note: 'Fast-play mode. Use Run rest of day to resolve remaining checkpoints.'
+  },
+  debug: {
+    id: 'debug',
+    label: 'Debug instant',
+    note: 'Debug mode. Intended for quick smoke tests and export checks.'
+  }
+};
+
 export function createTradingClock() {
   return {
     currentIndex: 0,
     currentTime: TRADING_DAY_SCHEDULE[0].timeLabel,
     nextCheckpointIndex: 1,
-    isComplete: false
+    isComplete: false,
+    mode: 'step',
+    isPaused: false,
+    controlsNote: 'Step mode: run one checkpoint at a time.'
   };
 }
 
@@ -56,12 +82,29 @@ export function getNextTradingCheckpoint(clock) {
   return TRADING_DAY_SCHEDULE[index] ?? TRADING_DAY_SCHEDULE[TRADING_DAY_SCHEDULE.length - 1];
 }
 
+export function getTradingClockMode(clock) {
+  const mode = clock?.mode ?? 'step';
+  return TRADING_CLOCK_MODES[mode] ?? TRADING_CLOCK_MODES.step;
+}
+
+export function setTradingClockMode(clock, mode) {
+  const nextMode = TRADING_CLOCK_MODES[mode] ? mode : 'step';
+  const details = TRADING_CLOCK_MODES[nextMode];
+  return {
+    ...(clock ?? createTradingClock()),
+    mode: nextMode,
+    isPaused: nextMode === 'paused',
+    controlsNote: details.note
+  };
+}
+
 export function advanceTradingClock(clock) {
   const current = clock ?? createTradingClock();
   const nextIndex = Math.min(current.nextCheckpointIndex ?? 1, TRADING_DAY_SCHEDULE.length - 1);
   const nextEntry = TRADING_DAY_SCHEDULE[nextIndex];
   const followingIndex = Math.min(nextIndex + 1, TRADING_DAY_SCHEDULE.length - 1);
   return {
+    ...current,
     currentIndex: nextIndex,
     currentTime: nextEntry.timeLabel,
     nextCheckpointIndex: followingIndex,
