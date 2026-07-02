@@ -2,7 +2,7 @@
 
 Browser prototype for The Garden Stall.
 
-Current version: `0.1.11-smoke-test-polish`
+Current version: `0.1.12-readability-numbers`
 
 Current implemented slice:
 
@@ -20,12 +20,14 @@ Current implemented slice:
 - per-tray/per-pot price bands: Bargain, Normal, Premium, Reduced
 - price band changes update unit price from the batch's base retail price
 - customer scoring now considers price sensitivity
-- trading logs include sale price band and unit price
+- pricing bands have been tuned to be less binary: bargain/reduced are less overpowering and premium is less punitive when stock is strong
+- trading logs include sale price band, unit price, score, and clearer reason text
+- missed-demand notes now include the closest match and the score gap where useful
 - first-pass notebook discovery system
 - notebook entries unlock from observed daily outcomes
 - notebook entries currently cover display zones, pricing, drying, requests, and missed demand
 - side-panel notebook groups discoveries by category
-- daily summary now answers what sold, money earned, blockers, condition changes, notebook learning, and what to try tomorrow
+- daily summary answers what sold, money earned, blockers, condition changes, notebook learning, and what to try tomorrow
 - Markdown debug export includes notebook entries and a daily review section
 - van capacity model: 6 tray spaces plus 6 loose/feature potted plants
 - van load buttons disable with player-facing capacity reasons when the relevant space is full
@@ -35,7 +37,7 @@ Current implemented slice:
 - species groups with fewer than 5 batches open by default; 5 or more start closed
 - visible stock watering is now per tray/pot, not global
 - repeated watering can set plants to `waterlogged`, shown to players as overwatered
-- overwatered visible stock carries a light end-of-day condition risk if left on display
+- overwatered visible stock carries a light end-of-day condition risk if left on display and a very small sales-score penalty
 - condition pressure thresholds have been lightly softened after local smoke-test feedback
 - basic home stock / van loadout flow
 - location, route, display, trading, and daily summary screens
@@ -44,6 +46,8 @@ Current implemented slice:
 - van stock can be placed directly into a chosen display zone
 - visible stock can be moved between display zones
 - display score and customer scoring now consider zone fit
+- reduced-area scoring is a little less severe, so one or two clearance batches do not overwhelm the stall story
+- display notes now give slightly clearer advice for gappy, tired, or over-reduced displays
 - reduced stock can return to a selected display zone or van during the trading day
 - unsold van/display/reduced stock is packed back home at end of day
 - passive customer wave simulation
