@@ -177,6 +177,10 @@ export function VanLoadoutScreen({ state, dispatch }) {
         <p className="eyebrow">Home Stock</p>
         <h2>Load the van</h2>
         <p className="muted">Capacity is {VAN_LOAD_LIMITS.traySlots} tray spaces plus {VAN_LOAD_LIMITS.featurePots} loose/feature potted plants. Trays and feature pots use different spaces, so a full tray bay may still leave room for loose pots.</p>
+        <div className="button-row wrap-actions">
+          <button className="secondary" disabled={homeStock.length === 0 || (trayFull && featureFull)} onClick={() => dispatch({ type: 'AUTOLOAD_VAN' })}>Autoload varied van</button>
+        </div>
+        <p className="fine-print">Autoload prefers variety first, then older home stock. It respects tray and feature-pot capacity.</p>
         {(trayFull || featureFull) && <p className="fine-print capacity-warning">Capacity warning: {trayFull ? 'tray space full' : null}{trayFull && featureFull ? '; ' : ''}{featureFull ? 'feature-pot space full' : null}.</p>}
         <ExpandableStockList
           title="Home stock"
@@ -235,6 +239,10 @@ export function DisplaySetupScreen({ state, dispatch }) {
         <p className="eyebrow">Display Setup</p>
         <h2>Zone placement and pricing</h2>
         <p className="muted">Front Table suits colourful or giftable stock. Floor / Crates works for useful grow-your-own trays. Feature Spot is limited; save it for showier pots.</p>
+        <div className="button-row wrap-actions">
+          <button className="secondary" disabled={vanStock.length === 0} onClick={() => dispatch({ type: 'AUTODISPLAY_STOCK' })}>Autodisplay varied stall</button>
+        </div>
+        <p className="fine-print">Autodisplay prefers variety first, then newer van stock. It puts higher potential value into premium spots where possible.</p>
         <ZoneUsagePanel displaySummary={displaySummary} />
         <ExpandableStockList
           title="Van stock"
