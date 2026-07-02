@@ -12,6 +12,57 @@ function latestReport(state) {
   return reports[reports.length - 1];
 }
 
+function buildSalesLines(report) {
+  const sales = (report?.tradingLog ?? []).flatMap((wave) => wave.sales ?? []);
+  const groups = sales.reduce((summary, sale) => {
+    const key = sale.plantName ?? 'Unknown stock';
+    const current = summary[key] ?? { plantName: key, quantity: 0, revenue: 0 };
+    return {
+      ...summary,
+      [key]: {
+        ...current,
+        quantity: current.quantity + (sale.quantity ?? 0),
+        revenue: current.revenue + ((sale.quantity ?? 0) * (sale.unitPrice ?? 0))
+      }
+    };
+  }, {});
+
+  const passiveLines = Object.values(groups)
+    .sort((a, b) => b.revenue - a.revenue)
+    .map((entry) => `- ${entry.quantity} × ${entry.plantName} through passive trade (£${entry.revenue.toFixed(2)})`);
+
+  const requestLines = (report?.requestLog ?? [])
+    .filter((request) => (request.revenue ?? 0) > 0)
+    .map((request) => `- ${request.plantName} answered ${request.requestName} (£${request.revenue.toFixed(2)})`);
+
+  const lines = [...passiveLines, ...requestLines];
+  return lines.length ? lines.join('\n') : '- No stock sold today';
+}
+
+function buildPressureLines(report) {
+  const lines = [];
+  const missedCount = report?.missedCount ?? 0;
+  if (missedCount > 0) lines.push(`- ${missedCount} missed demand note${missedCount === 1 ? '' : 's'} showed stock or placement gaps`);
+  (report?.pricingSummary?.notes ?? []).forEach((note) => lines.push(`- ${note}`));
+  if ((report?.conditionSummary ?? []).length > 0) lines.push('- Some visible stock lost freshness; check condition notes before ordering tomorrow');
+  return lines.length ? lines.join('\n') : '- No obvious sales blockers were recorded today';
+}
+
+function buildTomorrowLines(report) {
+  const lines = [];
+  const missedCount = report?.missedCount ?? 0;
+  const reducedSold = report?.pricingSummary?.soldByBand?.reduced ?? 0;
+  const premiumSold = report?.pricingSummary?.soldByBand?.premium ?? 0;
+
+  if (missedCount > 0) lines.push('- Use missed demand as tomorrow\'s shopping/placement clue');
+  if (reducedSold > 0) lines.push('- Reduced stock can clear awkward leftovers, but keep it from taking over the stall mood');
+  if (premiumSold === 0) lines.push('- Try premium pricing only on good-condition stock in a strong zone');
+  if ((report?.conditionSummary ?? []).length > 0) lines.push('- Water thirsty trays before later waves, but avoid repeated watering on the same batch');
+  lines.push('- Test a simple mix: one colourful draw, one useful edible tray, and one giftable/showy item');
+
+  return [...new Set(lines)].slice(0, 4).join('\n');
+}
+
 export function createDebugExport(state) {
   return {
     exportedAt: new Date().toISOString(),
@@ -65,6 +116,10 @@ export function createMarkdownReport(state) {
     ? state.notebook.discoveries.map((entry) => `- ${entry.title} (${entry.category}, Day ${entry.discoveredDay}): ${entry.text}`).join('\n')
     : '- No notebook discoveries yet';
 
+  const moneyLines = report
+    ? `- Passive trade: £${Number(report.passiveRevenue ?? 0).toFixed(2)}\n- Requests: £${Number(report.requestRevenue ?? 0).toFixed(2)}\n- Unsold batches packed home: ${report.packedCount ?? 0}`
+    : '- No daily money summary yet';
+
   return `# Garden Stall Prototype 0.1 Debug Report\n\n` +
     `Generated: ${new Date().toISOString()}\n\n` +
     `## Current State\n\n` +
@@ -72,6 +127,11 @@ export function createMarkdownReport(state) {
     `- Phase: ${PHASE_LABELS[state.phase] ?? state.phase}\n` +
     `- Cash: £${state.cash.toFixed(2)}\n` +
     `- Location: ${locationName}\n\n` +
+    `## Daily Review\n\n` +
+    `### What Sold\n\n${buildSalesLines(report)}\n\n` +
+    `### Money\n\n${moneyLines}\n\n` +
+    `### What Held Sales Back\n\n${buildPressureLines(report)}\n\n` +
+    `### Try Tomorrow\n\n${buildTomorrowLines(report)}\n\n` +
     `## Pending Orders\n\n${orderLines}\n\n` +
     `## Stock Batches\n\n${stockLines}\n\n` +
     `## Special Requests\n\n${requestLines}\n\n` +
