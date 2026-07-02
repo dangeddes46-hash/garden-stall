@@ -1,5 +1,30 @@
 # Changelog — The Garden Stall
 
+## 2026-07-02 — Readability and numbers polish
+
+Tuned the accepted Prototype 0.1 loop after 0.1.11 without adding new systems.
+
+Changed:
+
+- Current version is now `0.1.12-readability-numbers`.
+- Bargain, premium, and reduced price multipliers/modifiers were softened so pricing choices feel less binary.
+- Pricing summary now records `soldByBand` and revenue by price band for clearer daily-summary advice.
+- Customer missed-demand notes now include the closest visible match and score gap where useful.
+- Strong passive matches can sell up to 4 tray plants instead of always capping at 3.
+- Sale reasons now preserve up to two readable causes, such as stock match plus placement/price.
+- Overwatered stock now has a tiny customer-score penalty in addition to its light end-of-day condition risk.
+- Display scoring is slightly less punishing for poor displays and one or two reduced batches.
+- Display notes now explain gappy, tired, and over-reduced displays more clearly.
+
+Still not added:
+
+- staff implementation
+- upgrades
+- save/load
+- drag-and-drop display
+- final art dependency
+- new major gameplay systems
+
 ## 2026-07-02 — Smoke-test polish
 
 Polished the accepted 0.1.10 smoke-test route without adding a new major system.
