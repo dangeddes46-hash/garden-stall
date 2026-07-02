@@ -41,22 +41,26 @@ export const TRADING_CLOCK_MODES = {
   paused: {
     id: 'paused',
     label: 'Paused',
-    note: 'Planning mode. The clock will not move unless you manually run a checkpoint.'
+    note: 'Planning mode. The clock will not move unless you manually run a checkpoint.',
+    autoAdvanceMs: null
   },
   step: {
     id: 'step',
     label: 'Step',
-    note: 'Testing mode. Run one checkpoint at a time.'
+    note: 'Testing mode. Run one checkpoint at a time.',
+    autoAdvanceMs: null
   },
   fast: {
     id: 'fast',
     label: 'Fast',
-    note: 'Fast-play mode. Use Run rest of day to resolve remaining checkpoints.'
+    note: 'Auto mode. The next checkpoint will run every few seconds until packdown-ready or until paused.',
+    autoAdvanceMs: 3500
   },
   debug: {
     id: 'debug',
     label: 'Debug instant',
-    note: 'Debug mode. Intended for quick smoke tests and export checks.'
+    note: 'Very fast auto mode for smoke tests and export checks.',
+    autoAdvanceMs: 900
   }
 };
 
@@ -85,6 +89,14 @@ export function getNextTradingCheckpoint(clock) {
 export function getTradingClockMode(clock) {
   const mode = clock?.mode ?? 'step';
   return TRADING_CLOCK_MODES[mode] ?? TRADING_CLOCK_MODES.step;
+}
+
+export function getAutoAdvanceMs(clock) {
+  return getTradingClockMode(clock).autoAdvanceMs;
+}
+
+export function shouldAutoAdvanceClock(clock) {
+  return Boolean(getAutoAdvanceMs(clock)) && !(clock?.isComplete) && !(clock?.isPaused);
 }
 
 export function setTradingClockMode(clock, mode) {
