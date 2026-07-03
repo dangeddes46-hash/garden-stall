@@ -1,8 +1,9 @@
 import { PHASES, STARTING_CASH } from '../data/constants.js';
 import { createTradingClock } from '../systems/tradingClockSystem.js';
+import { createInitialWeekStats } from '../systems/weekStatsSystem.js';
 
 export const initialState = {
-  prototypeVersion: '0.1.23-stability-report-consolidation',
+  prototypeVersion: '0.1.24-daily-weekly-continuity',
   phase: PHASES.DAY0_ORDER,
   currentDay: 0,
   cash: STARTING_CASH,
@@ -12,6 +13,7 @@ export const initialState = {
   selectedWeather: null,
   selectedLocationId: null,
   dailyReports: [],
+  weekStats: createInitialWeekStats(),
   notebook: {
     discoveries: [],
     lastDiscoveries: [],
