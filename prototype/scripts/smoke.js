@@ -1,9 +1,14 @@
+import { DISPLAY_ZONES } from '../src/data/constants.js';
+import { VAN_LOAD_LIMITS } from '../src/data/vanCapacity.js';
 import { initialState } from '../src/state/initialState.js';
 import { reducer } from '../src/state/reducer.js';
 import { getSupplierListingsForDay } from '../src/data/supplierListings.js';
 import { locations } from '../src/data/locations.js';
 import { calculateCart } from '../src/systems/orderSystem.js';
-import { createMarkdownReport } from '../src/systems/reportSystemPatched.js';
+import { getVanLoadSummary } from '../src/systems/stockSystem.js';
+import { createMarkdownReport } from '../src/systems/reportSystem.js';
+
+const EXPECTED_VERSION = '0.1.23-stability-report-consolidation';
 
 function assert(condition, message) {
   if (!condition) {
@@ -34,21 +39,58 @@ function chooseAffordableVariedListings(day, cash) {
   return selected;
 }
 
-function runSmoke() {
-  let state = initialState;
-  assert(state.prototypeVersion, 'Initial state has no prototypeVersion.');
+function assertVanCapacity(state) {
+  const vanLoad = getVanLoadSummary(state.stockBatches);
+  assert(vanLoad.traySlots <= VAN_LOAD_LIMITS.traySlots, `Van tray slots exceeded: ${vanLoad.traySlots}/${VAN_LOAD_LIMITS.traySlots}.`);
+  assert(vanLoad.featurePots <= VAN_LOAD_LIMITS.featurePots, `Van feature pots exceeded: ${vanLoad.featurePots}/${VAN_LOAD_LIMITS.featurePots}.`);
+}
 
+function assertDisplayCapacity(state) {
+  for (const zone of DISPLAY_ZONES) {
+    const used = state.stockBatches.filter((batch) => {
+      if (batch.quantity <= 0) return false;
+      if (zone.id === 'reduced-area') return batch.location === 'reduced-area';
+      return batch.location === 'display' && batch.zoneId === zone.id;
+    }).length;
+    assert(used <= zone.capacity, `${zone.id} display capacity exceeded: ${used}/${zone.capacity}.`);
+  }
+
+  const displayed = state.stockBatches.filter((batch) => batch.location === 'display' && batch.quantity > 0);
+  assert(displayed.every((batch) => batch.zoneId), 'Displayed non-reduced stock is missing zoneId.');
+}
+
+function assertMarkdownSections(markdown) {
+  [
+    '## Daily Review',
+    '### Next Order Guidance',
+    '## Special Requests',
+    '## Pricing',
+    '## Condition Summary',
+    '## Detailed Condition Changes'
+  ].forEach((section) => assert(markdown.includes(section), `Markdown report missing ${section}.`));
+}
+
+function addOpeningOrder(state) {
   const openingItems = chooseAffordableVariedListings(state.currentDay, state.cash);
   assert(openingItems.length > 0, 'No affordable opening stock listings found.');
-
   for (const item of openingItems) {
     state = dispatch(state, { type: 'ADD_TO_CART', listing: item });
   }
   assert(state.cart.length > 0, 'Cart did not receive opening items.');
+  return { state, openingItems };
+}
+
+function runSmoke() {
+  let state = initialState;
+  assert(state.prototypeVersion === EXPECTED_VERSION, `Expected ${EXPECTED_VERSION}, got ${state.prototypeVersion}.`);
+
+  const opening = addOpeningOrder(state);
+  state = opening.state;
 
   state = dispatch(state, { type: 'PLACE_ORDER' });
   assert(state.phase === 'morning-collection', 'Place order did not move to morning collection.');
   assert(state.pendingOrders.length > 0, 'No pending order after PLACE_ORDER.');
+  assert(state.requestLog.length === 0, 'Request log did not reset when a new order/day cycle began.');
 
   state = dispatch(state, { type: 'COLLECT_ORDERS' });
   assert(state.stockBatches.some((batch) => batch.location === 'home'), 'Collection did not create home stock.');
@@ -66,6 +108,7 @@ function runSmoke() {
   const vanStock = state.stockBatches.filter((batch) => batch.location === 'van' && batch.quantity > 0);
   assert(vanStock.length > 0, 'AUTOLOAD_VAN did not load any stock.');
   assert(new Set(vanStock.map((batch) => batch.plantId)).size > 1 || vanStock.length === 1, 'AUTOLOAD_VAN did not preserve variety when variety was available.');
+  assertVanCapacity(state);
 
   state = dispatch(state, { type: 'ADVANCE_PHASE' });
   assert(state.phase === 'route-confirmation', 'Van loadout advance did not move to route confirmation.');
@@ -76,7 +119,7 @@ function runSmoke() {
   state = dispatch(state, { type: 'AUTODISPLAY_STOCK' });
   const displayStock = state.stockBatches.filter((batch) => ['display', 'reduced-area'].includes(batch.location) && batch.quantity > 0);
   assert(displayStock.length > 0, 'AUTODISPLAY_STOCK did not display any stock.');
-  assert(displayStock.every((batch) => batch.location === 'reduced-area' || batch.zoneId), 'Displayed stock is missing zoneId.');
+  assertDisplayCapacity(state);
 
   state = dispatch(state, { type: 'ADVANCE_PHASE' });
   assert(state.phase === 'trading', 'Display setup advance did not move to trading.');
@@ -84,21 +127,34 @@ function runSmoke() {
   state = dispatch(state, { type: 'RUN_REST_TRADING_DAY' });
   assert(state.tradingClock?.isComplete, 'RUN_REST_TRADING_DAY did not complete the trading clock.');
   assert(state.tradingLog.length > 0, 'Trading log stayed empty after RUN_REST_TRADING_DAY.');
+  assert(state.tradingLog.length <= 4, `Too many customer checkpoints were created: ${state.tradingLog.length}.`);
+
+  const completeLogLength = state.tradingLog.length;
+  const completeIndex = state.tradingClock?.currentIndex;
+  state = dispatch(state, { type: 'RUN_TRADING_CHECKPOINT' });
+  assert(state.tradingLog.length === completeLogLength, 'RUN_TRADING_CHECKPOINT added a wave after clock completion.');
+  assert(state.tradingClock?.currentIndex === completeIndex, 'RUN_TRADING_CHECKPOINT advanced the clock after completion.');
 
   state = dispatch(state, { type: 'END_TRADING_DAY' });
   assert(state.phase === 'daily-summary', 'END_TRADING_DAY did not move to daily summary.');
   assert(state.dailyReports.length > 0, 'END_TRADING_DAY did not create a daily report.');
+  assert(state.dailyReports[0].requestRevenue === 0, 'Unexpected request revenue appeared without a resolved request.');
 
   const markdown = createMarkdownReport(state);
-  assert(markdown.includes('## Daily Review'), 'Markdown report missing Daily Review section.');
-  assert(markdown.includes('### Next Order Guidance'), 'Markdown report missing Next Order Guidance section.');
+  assertMarkdownSections(markdown);
+
+  state = dispatch(state, { type: 'START_EVENING_ORDER' });
+  state = dispatch(state, { type: 'DEBUG_ADD_CASH', amount: 200 });
+  const secondOrder = addOpeningOrder(state);
+  state = dispatch(secondOrder.state, { type: 'PLACE_ORDER' });
+  assert(state.requestLog.length === 0, 'Request log leaked into the second day order cycle.');
 
   return {
     version: state.prototypeVersion,
-    openingLines: openingItems.length,
+    openingLines: opening.openingItems.length,
     vanBatches: vanStock.length,
     displayedBatches: displayStock.length,
-    tradingReports: state.tradingLog.length,
+    tradingReports: completeLogLength,
     dailyReports: state.dailyReports.length
   };
 }
