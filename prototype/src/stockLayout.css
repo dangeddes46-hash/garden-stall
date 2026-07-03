@@ -43,6 +43,68 @@ button {
   max-width: 100%;
 }
 
+.slot-schematic {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.slot-zone {
+  background: #f8f1df;
+  border: 1px solid #e1d3b9;
+  border-radius: 14px;
+  padding: 0.55rem;
+}
+
+.slot-zone h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
+  gap: 0.35rem;
+}
+
+.slot-cell {
+  min-height: 48px;
+  border: 1px solid #d5c6aa;
+  border-radius: 10px;
+  padding: 0.25rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.1rem 0.25rem;
+  align-items: center;
+  background: #fffaf0;
+  font-size: 0.78rem;
+}
+
+.slot-empty {
+  opacity: 0.55;
+}
+
+.slot-index {
+  color: #766954;
+  font-size: 0.68rem;
+}
+
+.slot-plant {
+  font-weight: 800;
+  text-align: right;
+}
+
+.slot-count {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 1rem;
+}
+
+.slot-empty-mark {
+  grid-column: 1 / -1;
+  text-align: center;
+}
+
 @media (max-width: 1250px) {
   .row-card.tray-card {
     grid-template-columns: 1fr;
