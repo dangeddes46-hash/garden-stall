@@ -1,4 +1,4 @@
-import { DISPLAY_ZONES } from '../src/data/constants.js';
+import { DISPLAY_ZONES, PHASES } from '../src/data/constants.js';
 import { VAN_LOAD_LIMITS } from '../src/data/vanCapacity.js';
 import { initialState } from '../src/state/initialState.js';
 import { reducer } from '../src/state/reducer.js';
@@ -8,7 +8,7 @@ import { calculateCart } from '../src/systems/orderSystem.js';
 import { getVanLoadSummary } from '../src/systems/stockSystem.js';
 import { createMarkdownReport } from '../src/systems/reportSystem.js';
 
-const EXPECTED_VERSION = '0.1.23-stability-report-consolidation';
+const EXPECTED_VERSION = '0.1.24-daily-weekly-continuity';
 
 function assert(condition, message) {
   if (!condition) {
@@ -63,6 +63,7 @@ function assertMarkdownSections(markdown) {
   [
     '## Daily Review',
     '### Next Order Guidance',
+    '## Week So Far',
     '## Special Requests',
     '## Pricing',
     '## Condition Summary',
@@ -83,6 +84,7 @@ function addOpeningOrder(state) {
 function runSmoke() {
   let state = initialState;
   assert(state.prototypeVersion === EXPECTED_VERSION, `Expected ${EXPECTED_VERSION}, got ${state.prototypeVersion}.`);
+  assert(state.weekStats?.daysCompleted === 0, 'Initial weekStats missing or not reset.');
 
   const opening = addOpeningOrder(state);
   state = opening.state;
@@ -139,9 +141,17 @@ function runSmoke() {
   assert(state.phase === 'daily-summary', 'END_TRADING_DAY did not move to daily summary.');
   assert(state.dailyReports.length > 0, 'END_TRADING_DAY did not create a daily report.');
   assert(state.dailyReports[0].requestRevenue === 0, 'Unexpected request revenue appeared without a resolved request.');
+  assert(state.weekStats?.daysCompleted >= 1, 'Ending a day did not increment weekStats.daysCompleted.');
+  assert(state.weekStats?.totalRevenue >= state.dailyReports[0].revenue, 'Week total revenue did not include the daily report.');
+  assert(typeof state.weekStats?.notebookDiscoveriesCount === 'number', 'Week stats did not track notebook discovery count.');
 
   const markdown = createMarkdownReport(state);
   assertMarkdownSections(markdown);
+
+  const daySevenSummary = { ...state, currentDay: 7, phase: PHASES.DAILY_SUMMARY };
+  const weeklyState = dispatch(daySevenSummary, { type: 'START_EVENING_ORDER' });
+  assert(weeklyState.phase === PHASES.WEEKLY_SUMMARY, 'Day 7 summary did not route safely to weekly summary.');
+  assert(weeklyState.weekStats?.daysCompleted >= 1, 'Weekly summary state lost week stats.');
 
   state = dispatch(state, { type: 'START_EVENING_ORDER' });
   state = dispatch(state, { type: 'DEBUG_ADD_CASH', amount: 200 });
@@ -155,7 +165,8 @@ function runSmoke() {
     vanBatches: vanStock.length,
     displayedBatches: displayStock.length,
     tradingReports: completeLogLength,
-    dailyReports: state.dailyReports.length
+    dailyReports: state.dailyReports.length,
+    daysCompleted: state.weekStats.daysCompleted
   };
 }
 
