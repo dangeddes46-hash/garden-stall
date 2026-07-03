@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PHASE_LABELS } from '../data/constants.js';
-import { createDebugExport, createMarkdownReport } from '../systems/reportSystemPatched.js';
+import { createDebugExport, createMarkdownReport } from '../systems/reportSystem.js';
 
 function NotebookPanel({ notebook, latestReport }) {
   const discoveries = notebook?.discoveries ?? [];
@@ -48,8 +48,8 @@ export default function DebugOverlay({ state, dispatch }) {
       <NotebookPanel notebook={state.notebook} latestReport={latestReport} />
       <h2>Debug / Admin</h2>
       <div className="button-grid">
-        <button onClick={() => dispatch({ type: 'DEBUG_ADD_CASH', amount: 10 })}>+£10</button>
-        <button onClick={() => dispatch({ type: 'DEBUG_ADD_CASH', amount: 50 })}>+£50</button>
+        <button onClick={() => dispatch({ type: 'DEBUG_ADD_CASH', amount: 10 })}>+GBP10</button>
+        <button onClick={() => dispatch({ type: 'DEBUG_ADD_CASH', amount: 50 })}>+GBP50</button>
         <button onClick={() => dispatch({ type: 'DEBUG_NEXT_DAY' })}>Next day</button>
         <button onClick={() => dispatch({ type: 'RESET_PROTOTYPE' })}>Reset</button>
         <button onClick={exportJson}>Export JSON</button>
