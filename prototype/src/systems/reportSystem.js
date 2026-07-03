@@ -2,6 +2,7 @@ import { PHASE_LABELS, DISPLAY_ZONES } from '../data/constants.js';
 import { locationById } from '../data/locations.js';
 import { describeMoistureForPlayer, summarizeConditionEvents } from './conditionSystem.js';
 import { describePriceBand } from './pricingSystem.js';
+import { buildWeekStrategyNote } from './weekStatsSystem.js';
 
 function zoneLabel(zoneId) {
   return DISPLAY_ZONES.find((zone) => zone.id === zoneId)?.label ?? zoneId ?? 'none';
@@ -96,6 +97,20 @@ function buildTomorrowLines(report) {
   return [...new Set(lines)].slice(0, 5).join('\n');
 }
 
+function buildWeekLines(state) {
+  const stats = state.weekStats;
+  if (!stats || stats.daysCompleted === 0) return '- No completed trading days yet';
+  const best = stats.bestRevenueDay ? `Day ${stats.bestRevenueDay.day} at ${money(stats.bestRevenueDay.revenue)}` : 'not established yet';
+  return [
+    `- Days completed: ${stats.daysCompleted}`,
+    `- Total revenue: ${money(stats.totalRevenue)}`,
+    `- Best day: ${best}`,
+    `- Total missed demand: ${stats.totalMissedDemand}`,
+    `- Notebook discoveries: ${stats.notebookDiscoveriesCount}`,
+    `- Strategy note: ${buildWeekStrategyNote(stats)}`
+  ].join('\n');
+}
+
 export function createDebugExport(state) {
   return {
     exportedAt: new Date().toISOString(),
@@ -112,6 +127,7 @@ export function createDebugExport(state) {
     requestLog: state.requestLog,
     conditionLog: state.conditionLog,
     dailyReports: state.dailyReports,
+    weekStats: state.weekStats,
     notebook: state.notebook,
     debugLog: state.debugLog
   };
@@ -169,6 +185,7 @@ export function createMarkdownReport(state) {
     `### What Held Sales Back\n\n${buildPressureLines(report)}\n\n` +
     `### Next Order Guidance\n\n${buildOrderGuidanceLines(report)}\n\n` +
     `### Try Tomorrow\n\n${buildTomorrowLines(report)}\n\n` +
+    `## Week So Far\n\n${buildWeekLines(state)}\n\n` +
     `## Pending Orders\n\n${orderLines}\n\n` +
     `## Stock Batches\n\n${stockLines}\n\n` +
     `## Special Requests\n\n${requestLines}\n\n` +
