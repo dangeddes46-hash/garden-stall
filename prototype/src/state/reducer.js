@@ -10,6 +10,7 @@ import { buildNotebookDiscoveriesForDay, createNotebookDailyNotes, mergeNotebook
 import { applyEndOfDayConditionPressure, applyTradingWaveConditionPressure, summarizeConditionEvents, summarizeWateredStock, waterStockBatch } from '../systems/conditionSystem.js';
 import { advanceTradingClock, createTradingClock, getNextTradingCheckpoint, setTradingClockMode } from '../systems/tradingClockSystem.js';
 import { autoloadVan, autodisplayStock } from '../systems/autoStockSystem.js';
+import { updateWeekStats } from '../systems/weekStatsSystem.js';
 import { initialState } from './initialState.js';
 
 function log(state, message) {
@@ -393,11 +394,13 @@ export function reducer(state, action) {
         notebookNotes,
         note: `Trading report: ${salesCount} passive sales, ${dailyRequestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionSummary.length} condition notes, ${packdown.packedCount} unsold tray batches packed home, ${(notebook.lastDiscoveries ?? []).length} new notebook entries.${unsoldNote}${guidanceNote}`
       };
+      const weekStats = updateWeekStats(state.weekStats, finalReport, notebook);
       return log({
         ...state,
         stockBatches: packdown.stockBatches,
         conditionLog: conditionEvents,
         notebook,
+        weekStats,
         activeRequest: null,
         phase: PHASES.DAILY_SUMMARY,
         dailyReports: [...state.dailyReports, finalReport]
@@ -405,6 +408,7 @@ export function reducer(state, action) {
     }
 
     case 'START_EVENING_ORDER':
+      if ((state.currentDay ?? 0) >= 7) return log({ ...state, phase: PHASES.WEEKLY_SUMMARY }, 'Opened weekly summary after Day 7.');
       return log({ ...state, phase: PHASES.EVENING_ORDER, tradingClock: createTradingClock() }, 'Opened evening wholesaler order.');
 
     case 'DEBUG_ADD_CASH':
