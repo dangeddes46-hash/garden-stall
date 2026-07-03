@@ -3,6 +3,7 @@ import { Card } from '../components/ui.jsx';
 import { CollectionScreen, DisplaySetupScreen, LocationScreen, RouteConfirmScreen, VanLoadoutScreen, WeatherScreen, WholesalerScreen } from './SetupScreens.jsx';
 import TradingScreen from './TradingScreen.jsx';
 import DailySummary from './DailySummary.jsx';
+import WeeklySummary from './WeeklySummary.jsx';
 
 export default function PhaseRenderer({ state, dispatch }) {
   switch (state.phase) {
@@ -26,7 +27,7 @@ export default function PhaseRenderer({ state, dispatch }) {
     case PHASES.DAILY_SUMMARY:
       return <DailySummary state={state} dispatch={dispatch} />;
     case PHASES.WEEKLY_SUMMARY:
-      return <Card><h2>Weekly Summary Placeholder</h2><p>This is scaffolded for the next implementation stage.</p></Card>;
+      return <WeeklySummary state={state} dispatch={dispatch} />;
     default:
       return <Card><h2>Unknown phase</h2><p>{state.phase}</p></Card>;
   }
