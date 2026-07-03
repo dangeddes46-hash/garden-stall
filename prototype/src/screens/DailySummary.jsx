@@ -1,4 +1,5 @@
 import { Card, money } from '../components/ui.jsx';
+import { buildWeekStrategyNote } from '../systems/weekStatsSystem.js';
 
 function buildSalesLines(report) {
   const sales = (report?.tradingLog ?? []).flatMap((wave) => wave.sales ?? []);
@@ -86,6 +87,25 @@ function buildTomorrowLines(report) {
   return [...new Set(lines)].slice(0, 5);
 }
 
+function WeekSoFar({ weekStats }) {
+  if (!weekStats || weekStats.daysCompleted === 0) return null;
+  const best = weekStats.bestRevenueDay;
+  const bestText = best ? `Day ${best.day} at ${money(best.revenue)}` : 'not established yet';
+  return (
+    <section className="row-card column-card">
+      <p className="eyebrow">Week so far</p>
+      <div className="totals">
+        <div><span>Days complete</span><strong>{weekStats.daysCompleted}</strong></div>
+        <div><span>Total revenue</span><strong>{money(weekStats.totalRevenue)}</strong></div>
+        <div><span>Best day</span><strong>{bestText}</strong></div>
+        <div><span>Missed demand</span><strong>{weekStats.totalMissedDemand}</strong></div>
+        <div><span>Notebook entries</span><strong>{weekStats.notebookDiscoveriesCount}</strong></div>
+      </div>
+      <p className="fine-print">{buildWeekStrategyNote(weekStats)}</p>
+    </section>
+  );
+}
+
 export default function DailySummary({ state, dispatch }) {
   const latest = state.dailyReports[state.dailyReports.length - 1];
   const conditionSummary = latest?.conditionSummary ?? [];
@@ -99,6 +119,7 @@ export default function DailySummary({ state, dispatch }) {
   const orderGuidanceLines = buildOrderGuidanceLines(latest);
   const tomorrowLines = buildTomorrowLines(latest);
   const passiveUnits = (latest?.tradingLog ?? []).reduce((sum, wave) => sum + (wave.sales ?? []).reduce((waveSum, sale) => waveSum + (sale.quantity ?? 0), 0), 0);
+  const weekComplete = (state.currentDay ?? 0) >= 7;
 
   return (
     <Card>
@@ -112,6 +133,8 @@ export default function DailySummary({ state, dispatch }) {
           <div><span>Requests</span><strong>{latest.requestCount ?? 0}</strong></div>
         </div>
       )}
+
+      <WeekSoFar weekStats={state.weekStats} />
 
       <h3>What sold</h3>
       {salesLines.length === 0 ? <p className="muted">No stock sold today.</p> : salesLines.slice(0, 5).map((line) => <p className="fine-print" key={line}>• {line}</p>)}
@@ -168,7 +191,7 @@ export default function DailySummary({ state, dispatch }) {
       <h3>Pricing notes</h3>
       {pricingNotes.length === 0 ? <p className="muted">No pricing notes today.</p> : pricingNotes.map((note) => <p className="fine-print" key={note}>• {note}</p>)}
 
-      <button onClick={() => dispatch({ type: 'START_EVENING_ORDER' })}>Open evening order</button>
+      <button onClick={() => dispatch({ type: 'START_EVENING_ORDER' })}>{weekComplete ? 'Review the week' : 'Plan tonight\'s order'}</button>
     </Card>
   );
 }
