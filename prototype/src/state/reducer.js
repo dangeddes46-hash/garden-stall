@@ -126,6 +126,7 @@ function nextSetupPhase(phase) {
 
 function runTradingCheckpoint(state) {
   if (state.phase !== PHASES.TRADING) return log(state, 'Trading checkpoint blocked: not in trading phase.');
+  if (state.tradingClock?.isComplete) return log(state, 'Trading checkpoint blocked: trading clock is already packdown-ready.');
 
   const nextCheckpoint = getNextTradingCheckpoint(state.tradingClock);
   const nextClock = advanceTradingClock(state.tradingClock);
@@ -212,6 +213,7 @@ export function reducer(state, action) {
         tradingWaveIndex: 0,
         tradingLog: [],
         activeRequest: null,
+        requestLog: [],
         conditionLog: []
       }, `Placed order for £${order.total.toFixed(2)}. Collection scheduled for Day ${order.dayArrives}.`);
     }
@@ -328,12 +330,13 @@ export function reducer(state, action) {
     case 'ANSWER_SPECIAL_REQUEST': {
       if (!state.activeRequest) return log(state, 'No active special request to answer.');
       const scored = scoreSpecialRequest({ state, request: state.activeRequest, batchId: action.batchId });
+      const dailyResult = { ...scored.result, day: state.currentDay };
       return log({
         ...state,
         stockBatches: scored.stockBatches,
         cash: scored.cash,
         activeRequest: null,
-        requestLog: [scored.result, ...state.requestLog].slice(0, 12)
+        requestLog: [dailyResult, ...state.requestLog].slice(0, 12)
       }, `Special request result: ${scored.result.outcome} with ${scored.result.plantName}.`);
     }
 
@@ -341,8 +344,9 @@ export function reducer(state, action) {
       return log({ ...state, activeRequest: null }, 'Special request dismissed without recommendation.');
 
     case 'END_TRADING_DAY': {
+      const dailyRequestLog = (state.requestLog ?? []).filter((request) => (request.day ?? state.currentDay) === state.currentDay);
       const revenue = state.tradingLog.reduce((sum, wave) => sum + (wave.revenue ?? 0), 0);
-      const requestRevenue = state.requestLog.reduce((sum, request) => sum + (request.revenue ?? 0), 0);
+      const requestRevenue = dailyRequestLog.reduce((sum, request) => sum + (request.revenue ?? 0), 0);
       const salesCount = state.tradingLog.reduce((sum, wave) => sum + (wave.sales?.length ?? 0), 0);
       const missedCount = state.tradingLog.reduce((sum, wave) => sum + (wave.missedDemand?.length ?? 0), 0);
       const pricingSummary = summarizePricingFromTradingLog(state.tradingLog);
@@ -361,11 +365,11 @@ export function reducer(state, action) {
         passiveRevenue: revenue,
         requestRevenue,
         salesCount,
-        requestCount: state.requestLog.length,
+        requestCount: dailyRequestLog.length,
         missedCount,
         tradingClock: state.tradingClock,
         tradingLog: state.tradingLog,
-        requestLog: state.requestLog,
+        requestLog: dailyRequestLog,
         conditionEvents,
         conditionSummary,
         wateredSummary,
@@ -387,7 +391,7 @@ export function reducer(state, action) {
         packedCount: packdown.packedCount,
         notebookDiscoveries: notebook.lastDiscoveries ?? [],
         notebookNotes,
-        note: `Trading report: ${salesCount} passive sales, ${state.requestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionSummary.length} condition notes, ${packdown.packedCount} unsold tray batches packed home, ${(notebook.lastDiscoveries ?? []).length} new notebook entries.${unsoldNote}${guidanceNote}`
+        note: `Trading report: ${salesCount} passive sales, ${dailyRequestLog.length} special requests, ${missedCount} missed demand notes, £${(revenue + requestRevenue).toFixed(2)} revenue, ${conditionSummary.length} condition notes, ${packdown.packedCount} unsold tray batches packed home, ${(notebook.lastDiscoveries ?? []).length} new notebook entries.${unsoldNote}${guidanceNote}`
       };
       return log({
         ...state,
@@ -424,6 +428,7 @@ export function reducer(state, action) {
         tradingWaveIndex: 0,
         tradingLog: [],
         activeRequest: null,
+        requestLog: [],
         conditionLog: []
       }, 'Debug jumped to next day.');
 
