@@ -48,7 +48,7 @@ function TradingClockControls({ state, dispatch, packdownReady, checkpointButton
   const waveCount = state.tradingWaveIndex ?? 0;
   const canRunRest = !packdownReady && waveCount < 4;
   const autoAdvanceMs = getAutoAdvanceMs(state.tradingClock);
-  const autoActive = shouldAutoAdvanceClock(state.tradingClock);
+  const autoActive = shouldAutoAdvanceClock(state.tradingClock) && !state.activeRequest;
 
   return (
     <div className="stack">
@@ -66,7 +66,7 @@ function TradingClockControls({ state, dispatch, packdownReady, checkpointButton
         ))}
       </div>
       <p className="fine-print">Current mode: <strong>{currentMode.label}</strong>. {state.tradingClock?.controlsNote ?? currentMode.note}</p>
-      {autoAdvanceMs && <p className="fine-print capacity-warning">Auto timer {autoActive ? 'active' : 'waiting'}: next checkpoint in about {(autoAdvanceMs / 1000).toFixed(1)} seconds unless paused or complete.</p>}
+      {autoAdvanceMs && <p className="fine-print capacity-warning">Auto timer {autoActive ? 'active' : 'waiting'}: next checkpoint in about {(autoAdvanceMs / 1000).toFixed(1)} seconds unless paused, complete, or waiting on a special request.</p>}
       <div className="button-row wrap-actions">
         <button disabled={packdownReady} onClick={() => dispatch({ type: 'RUN_TRADING_CHECKPOINT' })}>{checkpointButton}</button>
         <button className="secondary" disabled={!canRunRest} onClick={() => dispatch({ type: 'RUN_REST_TRADING_DAY' })}>Run rest of day</button>
@@ -118,7 +118,7 @@ export default function TradingScreen({ state, dispatch }) {
   const displayStock = getStockByLocation(state.stockBatches, 'display');
   const reducedStock = getStockByLocation(state.stockBatches, 'reduced-area');
   const autoAdvanceMs = getAutoAdvanceMs(state.tradingClock);
-  const autoAdvance = shouldAutoAdvanceClock(state.tradingClock);
+  const autoAdvance = shouldAutoAdvanceClock(state.tradingClock) && !state.activeRequest;
 
   useEffect(() => {
     if (!autoAdvance || !autoAdvanceMs) return undefined;
@@ -126,7 +126,7 @@ export default function TradingScreen({ state, dispatch }) {
       dispatch({ type: 'RUN_TRADING_CHECKPOINT' });
     }, autoAdvanceMs);
     return () => window.clearTimeout(timer);
-  }, [autoAdvance, autoAdvanceMs, state.tradingClock?.currentIndex, state.tradingClock?.mode, dispatch]);
+  }, [autoAdvance, autoAdvanceMs, state.tradingClock?.currentIndex, state.tradingClock?.mode, state.activeRequest, dispatch]);
 
   return (
     <div className="screen-grid">
