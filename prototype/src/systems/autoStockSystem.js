@@ -1,7 +1,7 @@
 import { DISPLAY_ZONES } from '../data/constants.js';
 import { plantById } from '../data/plants.js';
 import { applyPriceBand } from './pricingSystem.js';
-import { canLoadBatchToVan, getBatchVanLoad } from './stockSystem.js';
+import { canLoadBatchToVan } from './stockSystem.js';
 
 function batchAge(batch) {
   return batch.dayCollected ?? batch.dayCreated ?? batch.dayArrived ?? batch.createdDay ?? 0;
@@ -30,31 +30,60 @@ function displayValue(batch) {
   return score;
 }
 
-function variedOldestSort(a, b) {
-  return batchAge(a) - batchAge(b) || plantKey(a).localeCompare(plantKey(b)) || potentialValue(b) - potentialValue(a);
+function oldestFirst(a, b) {
+  return batchAge(a) - batchAge(b) || potentialValue(b) - potentialValue(a) || a.id.localeCompare(b.id);
 }
 
-function variedNewestSort(a, b) {
-  return batchAge(b) - batchAge(a) || plantKey(a).localeCompare(plantKey(b)) || displayValue(b) - displayValue(a);
+function newestFirst(a, b) {
+  return batchAge(b) - batchAge(a) || displayValue(b) - displayValue(a) || a.id.localeCompare(b.id);
 }
 
-function pickVariedBatches(candidates, maxCount, sortFunction) {
-  const sorted = [...candidates].sort(sortFunction);
+function groupByPlant(candidates, sortFunction) {
+  const groups = new Map();
+  candidates.forEach((batch) => {
+    const key = plantKey(batch);
+    groups.set(key, [...(groups.get(key) ?? []), batch]);
+  });
+
+  return [...groups.entries()]
+    .map(([key, batches]) => ({
+      key,
+      batches: [...batches].sort(sortFunction),
+      firstAge: Math.min(...batches.map(batchAge)),
+      newestAge: Math.max(...batches.map(batchAge)),
+      topValue: Math.max(...batches.map(displayValue))
+    }))
+    .sort((a, b) => a.firstAge - b.firstAge || b.topValue - a.topValue || a.key.localeCompare(b.key));
+}
+
+function pickVariedBatches(candidates, maxCount, sortFunction, options = {}) {
+  const groups = groupByPlant(candidates, sortFunction);
   const selected = [];
-  const selectedIds = new Set();
-  const plantCounts = new Map();
+  let depth = 0;
 
   while (selected.length < maxCount) {
-    const next = sorted.find((batch) => {
-      if (selectedIds.has(batch.id)) return false;
-      const count = plantCounts.get(plantKey(batch)) ?? 0;
-      return count === 0;
-    }) ?? sorted.find((batch) => !selectedIds.has(batch.id));
+    let pickedThisPass = 0;
+    const orderedGroups = [...groups].sort((a, b) => {
+      const aBatch = a.batches[depth];
+      const bBatch = b.batches[depth];
+      if (!aBatch && !bBatch) return 0;
+      if (!aBatch) return 1;
+      if (!bBatch) return -1;
+      return sortFunction(aBatch, bBatch);
+    });
 
-    if (!next) break;
-    selected.push(next);
-    selectedIds.add(next.id);
-    plantCounts.set(plantKey(next), (plantCounts.get(plantKey(next)) ?? 0) + 1);
+    for (const group of orderedGroups) {
+      const next = group.batches[depth];
+      if (!next) continue;
+      selected.push(next);
+      pickedThisPass += 1;
+      if (selected.length >= maxCount) break;
+    }
+
+    if (pickedThisPass === 0) break;
+    depth += 1;
+
+    if (options.oneFullVarietyPassOnly && depth > 0) break;
   }
 
   return selected;
@@ -65,7 +94,7 @@ export function autoloadVan(stockBatches) {
   const selected = [];
   let working = stockBatches;
 
-  for (const batch of pickVariedBatches(candidates, candidates.length, variedOldestSort)) {
+  for (const batch of pickVariedBatches(candidates, candidates.length, oldestFirst)) {
     if (!canLoadBatchToVan(working, batch.id)) continue;
     selected.push(batch.id);
     working = working.map((item) => item.id === batch.id ? { ...item, location: 'van', zoneId: null } : item);
@@ -96,7 +125,7 @@ function chooseZone(batch, zoneUse) {
 export function autodisplayStock(stockBatches) {
   const candidates = stockBatches.filter((batch) => batch.location === 'van' && batch.quantity > 0);
   const displayCapacity = DISPLAY_ZONES.filter((zone) => zone.id !== 'reduced-area').reduce((sum, zone) => sum + zone.capacity, 0);
-  const selected = pickVariedBatches(candidates, displayCapacity, variedNewestSort);
+  const selected = pickVariedBatches(candidates, displayCapacity, newestFirst);
   const selectedIds = new Set(selected.map((batch) => batch.id));
   const zoneUse = Object.fromEntries(DISPLAY_ZONES.map((zone) => [zone.id, stockBatches.filter((batch) => (batch.zoneId ?? (batch.location === 'reduced-area' ? 'reduced-area' : null)) === zone.id && ['display', 'reduced-area'].includes(batch.location) && batch.quantity > 0).length]));
   const placements = [];
