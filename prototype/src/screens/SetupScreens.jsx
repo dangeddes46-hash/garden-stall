@@ -9,6 +9,7 @@ import { getDisplayZoneSummary } from '../systems/displaySystem.js';
 import { buildEveningOrderFeedback } from '../systems/eveningFeedbackSystem.js';
 import { Card, money } from '../components/ui.jsx';
 import { ExpandableStockList, ReducedStockList, ZonePlacementButtons, ZoneUsagePanel } from '../components/StockLists.jsx';
+import { DisplaySlotSchematic, VanSlotSchematic } from '../components/SlotSchematic.jsx';
 
 function EveningOrderFeedback({ state }) {
   const feedback = buildEveningOrderFeedback(state);
@@ -203,6 +204,7 @@ export function VanLoadoutScreen({ state, dispatch }) {
           <div><span>Feature pots</span><strong>{vanLoad.featurePots} / {VAN_LOAD_LIMITS.featurePots}</strong></div>
           <div><span>Batches</span><strong>{vanLoad.batchCount}</strong></div>
         </div>
+        <VanSlotSchematic stockBatches={state.stockBatches} />
         <ExpandableStockList title="Van stock" batches={vanStock} emptyText="The van is empty." actionLabel="Unload" actionType="UNLOAD_TO_HOME" dispatch={dispatch} />
         <button disabled={vanStock.length === 0} onClick={() => dispatch({ type: 'ADVANCE_PHASE' })}>Confirm loadout</button>
       </Card>
@@ -259,6 +261,7 @@ export function DisplaySetupScreen({ state, dispatch }) {
           <div><span>Rating</span><strong>{displaySummary.rating}</strong></div>
           <div><span>Score</span><strong>{displaySummary.score}</strong></div>
         </div>
+        <DisplaySlotSchematic stockBatches={state.stockBatches} />
         {displaySummary.notes.map((note) => <p key={note} className="fine-print">• {note}</p>)}
         <p className="fine-print">Watering helps dry stock, but repeated watering can overdo it.</p>
         <ExpandableStockList
