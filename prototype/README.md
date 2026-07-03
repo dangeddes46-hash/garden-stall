@@ -2,7 +2,7 @@
 
 Browser prototype for The Garden Stall.
 
-Current version: `0.1.23-stability-report-consolidation`
+Current version: `0.1.24-daily-weekly-continuity`
 
 ## Current implemented slice
 
@@ -35,6 +35,9 @@ Implemented:
 - Passive customer simulation, missed-demand notes, sale reasons, price notes, and display scoring.
 - Special request generation and scored recommendations.
 - Daily reports with sales, money, blockers, leftovers, request results, pricing, condition notes, notebook discoveries, and next-order guidance.
+- Week-to-date stats now accumulate across completed days.
+- Daily Summary now shows a compact Week so far section.
+- Day 7 now routes safely to a minimal Weekly Summary instead of an ordinary evening order.
 - Canonical Markdown/JSON debug exports in `prototype/src/systems/reportSystem.js`.
 - Notebook discovery/readable feedback layer.
 - Headless reducer/system smoke test via `npm run smoke`.
@@ -67,7 +70,7 @@ Still placeholder / deliberately not added yet:
 - final art integration
 - new plant systems
 - new locations
-- weekly summary polish
+- complex weekly scoring or rewards
 - browser-driven automated UI tests
 
 No backend, save/load, TypeScript, drag-and-drop, staff system, or final art dependency has been added.
