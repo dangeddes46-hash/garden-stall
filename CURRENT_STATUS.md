@@ -6,7 +6,7 @@ Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`0.1.23-stability-report-consolidation`
+`0.1.24-daily-weekly-continuity`
 
 ## Current Source of Truth
 
@@ -42,13 +42,16 @@ Implemented:
 - Special request generation, scoring, revenue, and request log.
 - Daily request log is treated as daily state and resets when a new order/day cycle begins.
 - Daily report with sales, money, blockers, leftovers, special requests, pricing, condition, notebook, and next-order guidance.
-- Canonical report export now lives in `prototype/src/systems/reportSystem.js`.
+- Lightweight week/run stats now accumulate after each completed day.
+- Daily Summary now includes a Week so far section.
+- Day 7 now routes safely to a minimal Weekly Summary screen.
+- Canonical report export lives in `prototype/src/systems/reportSystem.js` and includes week context.
 - Headless reducer/system smoke test via `npm run smoke`.
 - Notebook discoveries remain readable feedback only for now.
 
 ## Current Priority
 
-Keep the loop stable and inspectable before adding more gameplay systems.
+Use the weekly continuity layer to make repeated days feel coherent without turning the game into a dashboard.
 
 Recommended local check:
 
@@ -70,9 +73,10 @@ npm.cmd run dev
 
 ## Known Risks / Limitations
 
-- This build still needs Daniel's local browser smoke test after pull.
+- This build still needs Daniel's local smoke test after pull.
 - The smoke test is headless and reducer/system-level, not a browser UI test.
 - Staff, upgrades, save/load, drag-and-drop display, final art, new plant systems, and new locations are deliberately not added yet.
+- Weekly summary is intentionally minimal: no scoring, achievements, staff pressure, upgrades, or progression rewards.
 - Trading balance, customer scoring, pricing, and condition pressure are still first-pass and need playtest feel.
 - Notebook entries are readable feedback only; they do not unlock skills or bonuses yet.
 - The app remains a local browser prototype with no backend.
