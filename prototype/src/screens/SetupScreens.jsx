@@ -91,7 +91,7 @@ export function WholesalerScreen({ state, dispatch }) {
           <div><span>Order fee</span><strong>{money(totals.fee)}</strong></div>
           <div><span>Total</span><strong>{money(totals.total)}</strong></div>
         </div>
-        <p className="fine-print">Fee-free threshold: £100. This can be tuned later.</p>
+        <p className="fine-print">Fee-free threshold: GBP100. This can be tuned later.</p>
         <div className="button-row">
           <button disabled={state.cart.length === 0 || totals.total > state.cash} onClick={() => dispatch({ type: 'PLACE_ORDER' })}>Place order for tomorrow</button>
           <button className="secondary" onClick={() => dispatch({ type: 'CLEAR_CART' })}>Clear cart</button>
@@ -107,9 +107,7 @@ export function CollectionScreen({ state, dispatch }) {
     <Card>
       <p className="eyebrow">Morning Collection</p>
       <h2>Collect yesterday's wholesale order</h2>
-      {collectible.length === 0 ? (
-        <p>No orders are ready yet. Use debug controls if you jumped here manually.</p>
-      ) : (
+      {collectible.length === 0 ? <p>No orders are ready yet. Use debug controls if you jumped here manually.</p> : (
         <div className="stack">
           {collectible.map((order) => (
             <div className="row-card" key={order.id}>
@@ -172,17 +170,19 @@ export function VanLoadoutScreen({ state, dispatch }) {
   const vanLoad = getVanLoadSummary(state.stockBatches);
   const trayFull = vanLoad.traySlots >= VAN_LOAD_LIMITS.traySlots;
   const featureFull = vanLoad.featurePots >= VAN_LOAD_LIMITS.featurePots;
+  const sundryFull = vanLoad.sundrySlots >= VAN_LOAD_LIMITS.sundrySlots;
   return (
     <div className="screen-grid">
       <Card>
         <p className="eyebrow">Home Stock</p>
         <h2>Load the van</h2>
-        <p className="muted">Capacity is {VAN_LOAD_LIMITS.traySlots} tray spaces plus {VAN_LOAD_LIMITS.featurePots} loose/feature potted plants. Trays and feature pots use different spaces, so a full tray bay may still leave room for loose pots.</p>
+        <p className="muted">Capacity is {VAN_LOAD_LIMITS.traySlots} tray spaces, {VAN_LOAD_LIMITS.featurePots} feature-pot spaces, and {VAN_LOAD_LIMITS.sundrySlots} sundry spaces. Potted lilies travel three to a feature-pot space.</p>
         <div className="button-row wrap-actions">
-          <button className="secondary" disabled={homeStock.length === 0 || (trayFull && featureFull)} onClick={() => dispatch({ type: 'AUTOLOAD_VAN' })}>Autoload varied van</button>
+          <button className="secondary" disabled={homeStock.length === 0 || (trayFull && featureFull && sundryFull)} onClick={() => dispatch({ type: 'AUTOLOAD_VAN' })}>Autoload varied van</button>
+          <button className="secondary" disabled={homeStock.length === 0} onClick={() => dispatch({ type: 'CONSOLIDATE_HOME_STOCK' })}>Consolidate home trays</button>
         </div>
-        <p className="fine-print">Autoload prefers variety first, then older home stock. It respects tray and feature-pot capacity.</p>
-        {(trayFull || featureFull) && <p className="fine-print capacity-warning">Capacity warning: {trayFull ? 'tray space full' : null}{trayFull && featureFull ? '; ' : ''}{featureFull ? 'feature-pot space full' : null}.</p>}
+        <p className="fine-print">Autoload prefers variety first, then older home stock. It respects tray, feature-pot, and sundry capacity.</p>
+        {(trayFull || featureFull || sundryFull) && <p className="fine-print capacity-warning">Capacity warning: {trayFull ? 'tray space full ' : ''}{featureFull ? 'feature-pot space full ' : ''}{sundryFull ? 'sundry space full' : ''}.</p>}
         <ExpandableStockList
           title="Home stock"
           batches={homeStock}
@@ -201,7 +201,8 @@ export function VanLoadoutScreen({ state, dispatch }) {
         <p className="fine-print">Load a balanced day rather than everything you own. You can leave stock at home for tomorrow.</p>
         <div className="totals">
           <div><span>Tray spaces</span><strong>{vanLoad.traySlots} / {VAN_LOAD_LIMITS.traySlots}</strong></div>
-          <div><span>Feature pots</span><strong>{vanLoad.featurePots} / {VAN_LOAD_LIMITS.featurePots}</strong></div>
+          <div><span>Feature spaces</span><strong>{vanLoad.featurePots} / {VAN_LOAD_LIMITS.featurePots}</strong></div>
+          <div><span>Sundry spaces</span><strong>{vanLoad.sundrySlots} / {VAN_LOAD_LIMITS.sundrySlots}</strong></div>
           <div><span>Batches</span><strong>{vanLoad.batchCount}</strong></div>
         </div>
         <VanSlotSchematic stockBatches={state.stockBatches} />
@@ -264,6 +265,9 @@ export function DisplaySetupScreen({ state, dispatch }) {
         <DisplaySlotSchematic stockBatches={state.stockBatches} />
         {displaySummary.notes.map((note) => <p key={note} className="fine-print">• {note}</p>)}
         <p className="fine-print">Watering helps dry stock, but repeated watering can overdo it.</p>
+        <div className="button-row wrap-actions">
+          <button className="secondary" disabled={displayStock.length + reducedStock.length === 0} onClick={() => dispatch({ type: 'CONSOLIDATE_VISIBLE_STOCK' })}>Consolidate visible trays</button>
+        </div>
         <ExpandableStockList
           title="Display"
           batches={displayStock}
