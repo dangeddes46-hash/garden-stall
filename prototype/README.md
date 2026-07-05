@@ -2,7 +2,7 @@
 
 Browser prototype for The Garden Stall.
 
-Current version: `0.1.24-daily-weekly-continuity`
+Current version: `0.1.25-stock-handling-summary-readability`
 
 ## Current implemented slice
 
@@ -19,27 +19,20 @@ Implemented:
 - Day 0 / evening wholesale order flow.
 - Morning collection flow that converts pending orders into physical tray/pot stock batches.
 - Home stock, van stock, display stock, reduced stock, sold stock, and packed-home leftovers.
-- Van capacity model: 6 tray spaces plus 6 loose/feature potted plants.
-- Manual load, unload, display placement, reduced-area, pricing, and watering controls.
+- Van capacity model: 6 tray spaces, 6 feature-pot spaces, and 3 sundry spaces.
+- Potted lilies use grouped feature-pot capacity: 1-3 lilies use 1 feature space, 4-6 use 2.
+- Sundries use their own van bay; compost bags and terracotta pot packs do not consume tray or feature-pot space.
+- Manual load, unload, display placement, reduced-area, pricing, watering, and compatible tray consolidation controls.
 - Autoload varied van convenience button.
 - Autodisplay varied stall convenience button.
-- Autoload uses variety first, then older home stock, with round-robin plant-line selection.
-- Autodisplay uses variety first, then newer van stock, and favours high-potential/showy/giftable/potted stock for stronger display positions.
 - Display zones: Front Table, Floor / Crates, Feature Spot, and Reduced Area.
 - Compact van and display slot schematics showing occupied slots and plant counts.
 - Tray/pot health records, condition, moisture, and per-batch pricing.
 - Progressive condition pressure during trading and end-of-day condition wrap-up.
-- Trading day checkpoint clock with manual, paused, fast, and debug modes.
-- Auto-advance pauses while a special request is active.
-- Reducer guard prevents extra customer waves after the trading clock is complete.
 - Passive customer simulation, missed-demand notes, sale reasons, price notes, and display scoring.
-- Special request generation and scored recommendations.
-- Daily reports with sales, money, blockers, leftovers, request results, pricing, condition notes, notebook discoveries, and next-order guidance.
-- Week-to-date stats now accumulate across completed days.
-- Daily Summary now shows a compact Week so far section.
-- Day 7 now routes safely to a minimal Weekly Summary instead of an ordinary evening order.
-- Canonical Markdown/JSON debug exports in `prototype/src/systems/reportSystem.js`.
-- Notebook discovery/readable feedback layer.
+- Daily reports with sales, money, blockers, condition-aware leftovers, request results, pricing, notebook discoveries, and next-order guidance.
+- Week-to-date stats and minimal Weekly Summary.
+- Markdown/JSON debug exports with Daily Review, Week So Far, Seven-Day Breakdown, Weekly Accounting, Stock Summary, and raw Stock Batches.
 - Headless reducer/system smoke test via `npm run smoke`.
 
 ## Run locally
@@ -55,14 +48,14 @@ npm run dev
 
 On Windows, `npm.cmd install`, `npm.cmd run smoke`, and `npm.cmd run dev` are also valid.
 
-Then open the local Vite URL shown in the terminal.
-
 After pulling changes, restart Vite if it was already running.
 
 ## Current limitations
 
 Still placeholder / deliberately not added yet:
 
+- broad margin rebalance
+- broad demand rebalance
 - staff implementation
 - upgrades
 - save/load
