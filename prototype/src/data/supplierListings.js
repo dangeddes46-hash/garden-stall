@@ -1,6 +1,7 @@
 import { ORDER_FEE, FEE_FREE_THRESHOLD } from './constants.js';
 import { plants } from './plants.js';
 import { getTrayProfileForPlant } from './trayProfiles.js';
+import { POTTRAY_UNITS_PER_SLOT, SUNDRYTRAY_UNITS_PER_SLOT } from './vanCapacity.js';
 
 const day0Available = new Set([
   'plant-tomato',
@@ -59,25 +60,32 @@ function availabilityForPlant(day, plantId) {
   return 'sold-out';
 }
 
-function listingNote(day, plant, trayProfile) {
-  const trayText = `${trayProfile.label}, ${trayProfile.quantity} units`;
+function quantityForTransportUnit(plantId, trayProfile) {
+  if (trayProfile.loadType === 'pottray') return POTTRAY_UNITS_PER_SLOT[plantId] ?? 1;
+  if (trayProfile.loadType === 'sundrytray') return SUNDRYTRAY_UNITS_PER_SLOT[plantId] ?? 1;
+  return trayProfile.quantity;
+}
+
+function listingNote(day, plant, trayProfile, quantity) {
+  const trayText = `${trayProfile.label}, ${quantity} units`;
   if (day === 0 && day0Available.has(plant.id)) return `Opening order stock. ${trayText}. Collect tomorrow morning.`;
   if (day === 2 && day2Additions.has(plant.id)) return `New line added after the first trading day. ${trayText}.`;
   if (day >= 3 && day3Specials.has(plant.id)) return `Special offer line. ${trayText}. Tune before serious balancing.`;
   return `Visible on the trade site, but not available yet. Usual batch: ${trayText}.`;
 }
 
-function estimateWholesaleCost(plant, trayProfile, specialOffer) {
+function estimateWholesaleCost(plant, quantity, specialOffer) {
   const perUnit = estimatedWholesalePerUnit[plant.id] ?? Math.max(0.45, plant.basePrices.normal * 0.45);
-  const baseCost = Math.round(perUnit * trayProfile.quantity);
+  const baseCost = Math.round(perUnit * quantity);
   return specialOffer ? Math.max(4, baseCost - 2) : Math.max(1, baseCost);
 }
 
 export function getSupplierListingsForDay(day) {
   return plants.map((plant) => {
     const trayProfile = getTrayProfileForPlant(plant.id);
+    const quantity = quantityForTransportUnit(plant.id, trayProfile);
     const specialOffer = day >= 3 && day3Specials.has(plant.id);
-    const wholesaleCost = estimateWholesaleCost(plant, trayProfile, specialOffer);
+    const wholesaleCost = estimateWholesaleCost(plant, quantity, specialOffer);
 
     return {
       id: `listing-day-${day}-${plant.id}`,
@@ -87,14 +95,14 @@ export function getSupplierListingsForDay(day) {
       batchType: trayProfile.id,
       batchLabel: trayProfile.label,
       loadType: trayProfile.loadType,
-      quantity: trayProfile.quantity,
+      quantity,
       wholesaleCost,
       suggestedRetail: plant.basePrices.normal,
       condition: specialOffer && plant.conditionRisk === 'high' ? 'good' : 'excellent',
       marginRating: specialOffer ? 'tempting' : 'normal',
       availability: availabilityForPlant(day, plant.id),
       tags: plant.tags,
-      supplierNote: listingNote(day, plant, trayProfile),
+      supplierNote: listingNote(day, plant, trayProfile, quantity),
       locationFitHints: plant.tags.filter((tag) => ['giftable', 'edible', 'herb', 'bedding', 'container-suitable', 'compact'].includes(tag)),
       specialOffer,
       trueValueRating: specialOffer && plant.conditionRisk === 'high' ? 'risky' : 'fair'
