@@ -1,6 +1,11 @@
 import { Card, money } from '../components/ui.jsx';
 import { buildWeekStrategyNote } from '../systems/weekStatsSystem.js';
 
+function conditionPhrase(entry) {
+  if (entry.mixedCondition) return `, mixed condition${entry.dominantCondition ? `, mostly ${entry.dominantCondition}` : ''}`;
+  return entry.dominantCondition ? ` ${entry.dominantCondition}` : '';
+}
+
 function buildSalesLines(report) {
   const sales = (report?.tradingLog ?? []).flatMap((wave) => wave.sales ?? []);
   const groups = sales.reduce((summary, sale) => {
@@ -32,10 +37,12 @@ function buildUnsoldLines(report) {
   if (packed.length === 0) return ['No unsold visible/van stock was packed home.'];
   return packed.slice(0, 6).map((entry) => {
     const notes = [];
-    if (entry.tiredBatches > 0) notes.push(`${entry.tiredBatches} tired/past-peak`);
     if (entry.reducedBatches > 0) notes.push(`${entry.reducedBatches} reduced`);
     const suffix = notes.length ? ` (${notes.join(', ')}).` : '.';
-    return `${entry.units} ${entry.plantName} left across ${entry.batches} batch${entry.batches === 1 ? '' : 'es'}${suffix}`;
+    if (entry.mixedCondition) {
+      return `${entry.units} ${entry.plantName} left across ${entry.batches} batch${entry.batches === 1 ? '' : 'es'}${conditionPhrase(entry)}${suffix}`;
+    }
+    return `${entry.units}${conditionPhrase(entry)} ${entry.plantName} left across ${entry.batches} batch${entry.batches === 1 ? '' : 'es'}${suffix}`;
   });
 }
 
