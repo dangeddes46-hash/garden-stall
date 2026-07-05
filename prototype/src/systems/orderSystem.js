@@ -1,4 +1,5 @@
 import { calculateOrderFee } from '../data/supplierListings.js';
+import { FEATURE_POT_UNITS_PER_SLOT } from '../data/vanCapacity.js';
 import { plantById } from '../data/plants.js';
 
 export function calculateCart(cart) {
@@ -62,8 +63,33 @@ function createStockBatch({ order, item, plant, itemIndex, batchIndex, quantity,
     batchType,
     batchLabel,
     loadType,
+    wholesaleCost: item.wholesaleCost,
+    wholesaleCostPerUnit: item.quantity ? item.wholesaleCost / item.quantity : item.wholesaleCost,
     notes: [item.supplierNote].filter(Boolean)
   };
+}
+
+function createFeaturePotBatches({ order, item, plant, itemIndex }) {
+  const unitsPerBatch = FEATURE_POT_UNITS_PER_SLOT[item.plantId] ?? 1;
+  const totalUnits = item.count * item.quantity;
+  const batchCount = Math.ceil(totalUnits / unitsPerBatch);
+
+  return Array.from({ length: batchCount }, (_, potIndex) => {
+    const remaining = totalUnits - (potIndex * unitsPerBatch);
+    const quantity = Math.min(unitsPerBatch, remaining);
+    const grouped = unitsPerBatch > 1;
+    return createStockBatch({
+      order,
+      item,
+      plant,
+      itemIndex,
+      batchIndex: potIndex,
+      quantity,
+      batchLabel: grouped ? `${quantity} grouped feature pots` : 'single feature pot',
+      batchType: grouped ? 'feature-pot-grouped' : 'feature-pot',
+      loadType: 'feature-pots'
+    });
+  });
 }
 
 export function createStockBatchesFromOrder(order) {
@@ -72,17 +98,7 @@ export function createStockBatchesFromOrder(order) {
     if (!plant) return [];
 
     if (item.loadType === 'feature-pots') {
-      return Array.from({ length: item.count * item.quantity }, (_, potIndex) => createStockBatch({
-        order,
-        item,
-        plant,
-        itemIndex,
-        batchIndex: potIndex,
-        quantity: 1,
-        batchLabel: 'single feature pot',
-        batchType: 'feature-pot',
-        loadType: 'feature-pots'
-      }));
+      return createFeaturePotBatches({ order, item, plant, itemIndex });
     }
 
     return Array.from({ length: item.count }, (_, trayIndex) => createStockBatch({
