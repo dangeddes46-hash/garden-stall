@@ -16,15 +16,19 @@ function isPotted(batch) {
   return batch?.loadType === 'feature-pots';
 }
 
+function isSundry(batch) {
+  return batch?.loadType === 'sundry';
+}
+
 function Slot({ index, batch, labelPrefix = 'Slot' }) {
   const count = batch?.quantity ?? null;
   return (
-    <div className={`slot-cell ${batch ? 'slot-filled' : 'slot-empty'}`} title={batch ? `${batch.plantName}: ${count} plant${count === 1 ? '' : 's'} left` : `${labelPrefix} ${index + 1}: empty`}>
+    <div className={`slot-cell ${batch ? 'slot-filled' : 'slot-empty'}`} title={batch ? `${batch.plantName}: ${count} unit${count === 1 ? '' : 's'} left` : `${labelPrefix} ${index + 1}: empty`}>
       <span className="slot-index">{index + 1}</span>
       {batch ? (
         <>
           <span className="slot-plant">{shortName(batch.plantName)}</span>
-          {isPotted(batch) ? <strong className="slot-count">{count}</strong> : <span className="slot-count">{count}</span>}
+          {isPotted(batch) ? <strong className="slot-count">{count}</strong> : <span className="slot-count">{count}{isSundry(batch) ? ' sundry' : ''}</span>}
         </>
       ) : <span className="slot-empty-mark">—</span>}
     </div>
@@ -45,14 +49,16 @@ function ZoneBlock({ title, capacity, batches, labelPrefix }) {
 
 export function VanSlotSchematic({ stockBatches }) {
   const vanStock = stockBatches.filter((batch) => batch.location === 'van' && batch.quantity > 0);
-  const trayBatches = vanStock.filter((batch) => batch.loadType !== 'feature-pots');
+  const trayBatches = vanStock.filter((batch) => batch.loadType !== 'feature-pots' && batch.loadType !== 'sundry');
   const featureBatches = vanStock.filter((batch) => batch.loadType === 'feature-pots');
+  const sundryBatches = vanStock.filter((batch) => batch.loadType === 'sundry');
   return (
     <div className="slot-schematic">
       <p className="eyebrow">Van schematic</p>
       <ZoneBlock title="Tray bay" capacity={VAN_LOAD_LIMITS.traySlots} batches={trayBatches} labelPrefix="Tray bay" />
       <ZoneBlock title="Potted plant bay" capacity={VAN_LOAD_LIMITS.featurePots} batches={featureBatches} labelPrefix="Potted plant bay" />
-      <p className="fine-print">Numbers show plants left in that tray or potted batch. Bold numbers mean individual potted plants rather than a tray.</p>
+      <ZoneBlock title="Sundry bay" capacity={VAN_LOAD_LIMITS.sundrySlots} batches={sundryBatches} labelPrefix="Sundry bay" />
+      <p className="fine-print">Numbers show plants or sundry units left. Bold numbers mean potted/feature plants. Sundries now use their own bay.</p>
     </div>
   );
 }
@@ -69,7 +75,7 @@ export function DisplaySlotSchematic({ stockBatches }) {
         });
         return <ZoneBlock key={zone.id} title={`${zoneLabel(zone.id)} (${zone.capacity})`} capacity={zone.capacity} batches={batches} labelPrefix={zone.label} />;
       })}
-      <p className="fine-print">15 display slots total. Numbers show plants left in each tray or potted batch. Bold numbers mean individual potted plants rather than a tray.</p>
+      <p className="fine-print">15 display slots total. Numbers show plants left in each tray or potted batch. Bold numbers mean potted/feature plants rather than a tray.</p>
     </div>
   );
 }
