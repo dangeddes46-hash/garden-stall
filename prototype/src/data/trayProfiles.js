@@ -23,21 +23,21 @@ export const TRAY_PROFILES = {
     quantity: 15,
     loadType: 'tray'
   },
-  featurePots6: {
-    id: 'feature-pots-6',
-    label: '6 feature pots',
-    rows: 2,
-    columns: 3,
-    quantity: 6,
-    loadType: 'feature-pots'
-  },
-  sundryPack: {
-    id: 'sundry-pack',
-    label: 'sundry pack',
+  pottray: {
+    id: 'pottray',
+    label: 'pottray',
     rows: 1,
     columns: 1,
     quantity: 1,
-    loadType: 'sundry'
+    loadType: 'pottray'
+  },
+  sundrytray: {
+    id: 'sundrytray',
+    label: 'sundrytray',
+    rows: 1,
+    columns: 1,
+    quantity: 1,
+    loadType: 'sundrytray'
   }
 };
 
@@ -62,11 +62,11 @@ const plantTrayProfiles = {
   'plant-lobelia': 'beddingTray24',
   'plant-pelargonium': 'sixPack',
   'plant-fuchsia': 'sixPack',
-  'plant-potted-lily': 'featurePots6',
-  'plant-daffodil-pot': 'featurePots6',
-  'plant-hyacinth-pot': 'featurePots6',
-  'sundry-compost': 'sundryPack',
-  'sundry-terracotta-pot': 'sundryPack'
+  'plant-potted-lily': 'pottray',
+  'plant-daffodil-pot': 'pottray',
+  'plant-hyacinth-pot': 'pottray',
+  'sundry-compost': 'sundrytray',
+  'sundry-terracotta-pot': 'sundrytray'
 };
 
 export function getTrayProfileForPlant(plantId) {
