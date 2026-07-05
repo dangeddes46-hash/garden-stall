@@ -153,10 +153,10 @@ export function summarizeConditionEvents(conditionEvents = []) {
   return [...groups.values()].map((entry) => {
     const unit = entry.count === 1 ? 'batch' : 'batches';
     const conditionText = entry.fromCondition !== entry.toCondition
-      ? `${entry.fromCondition} → ${entry.toCondition}`
+      ? `${entry.fromCondition} -> ${entry.toCondition}`
       : `stayed ${entry.toCondition}`;
     const moistureText = entry.fromMoisture !== entry.toMoisture
-      ? `${describeMoistureForPlayer(entry.fromMoisture)} → ${describeMoistureForPlayer(entry.toMoisture)}`
+      ? `${describeMoistureForPlayer(entry.fromMoisture)} -> ${describeMoistureForPlayer(entry.toMoisture)}`
       : `stayed ${describeMoistureForPlayer(entry.toMoisture)}`;
 
     return {
@@ -174,13 +174,21 @@ export function summarizeWateredStock(stockBatches = []) {
   return [`${waterloggedCount} visible ${waterloggedCount === 1 ? 'batch is' : 'batches are'} overwatered. Overwatered stock now carries a light end-of-day condition risk if left on display.`];
 }
 
+export function canWaterStockBatch(batch) {
+  if (!batch || batch.quantity <= 0) return false;
+  if (!['display', 'reduced-area'].includes(batch.location)) return false;
+  if (['sold', 'discarded'].includes(batch.location)) return false;
+  if (batch.loadType === 'sundrytray') return false;
+  const plant = plantById[batch.plantId];
+  if (plant?.moistureProfile === 'none') return false;
+  return true;
+}
+
 export function waterStockBatch(stockBatches, batchId) {
   let changedCount = 0;
   const nextStock = stockBatches.map((batch) => {
     if (batch.id !== batchId) return batch;
-    if (!['display', 'reduced-area'].includes(batch.location)) return batch;
-    const plant = plantById[batch.plantId];
-    if (plant?.moistureProfile === 'none') return batch;
+    if (!canWaterStockBatch(batch)) return batch;
     const watered = waterBatchUnits(batch);
     changedCount += watered.changedCount;
     return watered.batch;
@@ -192,9 +200,7 @@ export function waterStockBatch(stockBatches, batchId) {
 export function waterVisibleStock(stockBatches) {
   let changedCount = 0;
   const nextStock = stockBatches.map((batch) => {
-    if (!['display', 'reduced-area'].includes(batch.location)) return batch;
-    const plant = plantById[batch.plantId];
-    if (plant?.moistureProfile === 'none') return batch;
+    if (!canWaterStockBatch(batch)) return batch;
     const watered = waterBatchUnits(batch);
     changedCount += watered.changedCount;
     return watered.batch;
