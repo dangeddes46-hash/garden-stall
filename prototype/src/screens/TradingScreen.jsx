@@ -55,14 +55,7 @@ function TradingClockControls({ state, dispatch, packdownReady, checkpointButton
       <h3>Clock controls</h3>
       <div className="button-row wrap-actions">
         {Object.values(TRADING_CLOCK_MODES).map((mode) => (
-          <button
-            key={mode.id}
-            className={currentMode.id === mode.id ? 'secondary' : undefined}
-            title={mode.note}
-            onClick={() => dispatch({ type: 'SET_TRADING_CLOCK_MODE', mode: mode.id })}
-          >
-            {mode.label}
-          </button>
+          <button key={mode.id} className={currentMode.id === mode.id ? 'secondary' : undefined} title={mode.note} onClick={() => dispatch({ type: 'SET_TRADING_CLOCK_MODE', mode: mode.id })}>{mode.label}</button>
         ))}
       </div>
       <p className="fine-print">Current mode: <strong>{currentMode.label}</strong>. {state.tradingClock?.controlsNote ?? currentMode.note}</p>
@@ -101,11 +94,7 @@ function TradingClockPanel({ state, dispatch, displaySummary }) {
         {TRADING_DAY_SCHEDULE.map((entry) => {
           const done = entry.index <= (state.tradingClock?.currentIndex ?? 0);
           const nextUp = entry.index === (state.tradingClock?.nextCheckpointIndex ?? 1);
-          return (
-            <p className="fine-print" key={entry.timeLabel}>
-              {done ? '✓' : nextUp ? '→' : '•'} <strong>{entry.timeLabel}</strong> {entry.title} — {entry.description}
-            </p>
-          );
+          return <p className="fine-print" key={entry.timeLabel}>{done ? '✓' : nextUp ? '→' : '•'} <strong>{entry.timeLabel}</strong> {entry.title} — {entry.description}</p>;
         })}
       </div>
       <ZoneUsagePanel displaySummary={displaySummary} />
@@ -122,9 +111,7 @@ export default function TradingScreen({ state, dispatch }) {
 
   useEffect(() => {
     if (!autoAdvance || !autoAdvanceMs) return undefined;
-    const timer = window.setTimeout(() => {
-      dispatch({ type: 'RUN_TRADING_CHECKPOINT' });
-    }, autoAdvanceMs);
+    const timer = window.setTimeout(() => { dispatch({ type: 'RUN_TRADING_CHECKPOINT' }); }, autoAdvanceMs);
     return () => window.clearTimeout(timer);
   }, [autoAdvance, autoAdvanceMs, state.tradingClock?.currentIndex, state.tradingClock?.mode, state.activeRequest, dispatch]);
 
@@ -137,6 +124,9 @@ export default function TradingScreen({ state, dispatch }) {
       <div className="stack">
         <Card>
           <h2>Current Stall</h2>
+          <div className="button-row wrap-actions">
+            <button className="secondary" disabled={displayStock.length + reducedStock.length === 0} onClick={() => dispatch({ type: 'CONSOLIDATE_VISIBLE_STOCK' })}>Consolidate visible trays</button>
+          </div>
           <ExpandableStockList
             title="Display"
             batches={displayStock}
