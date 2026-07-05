@@ -7,8 +7,8 @@ function shortName(name = '') {
   return name.split(/\s+/).filter(Boolean).map((word) => word[0]).join('').slice(0, 3).toUpperCase();
 }
 
-function isPotted(batch) { return batch?.loadType === 'feature-pots'; }
-function isSundry(batch) { return batch?.loadType === 'sundry'; }
+function isPottray(batch) { return batch?.loadType === 'pottray'; }
+function isSundrytray(batch) { return batch?.loadType === 'sundrytray'; }
 
 function expandByLoadSlots(batches, slotKey) {
   return batches.flatMap((batch) => {
@@ -27,7 +27,7 @@ function Slot({ index, batch, labelPrefix = 'Slot' }) {
       {batch ? (
         <>
           <span className="slot-plant">{shortName(batch.plantName)}</span>
-          {isPotted(batch) ? <strong className="slot-count">{count}{batch.slotPart ? ` ${batch.slotPart}` : ''}</strong> : <span className="slot-count">{count}{isSundry(batch) ? ' sundry' : ''}{batch.slotPart ? ` ${batch.slotPart}` : ''}</span>}
+          {isPottray(batch) ? <strong className="slot-count">{count}{batch.slotPart ? ` ${batch.slotPart}` : ''}</strong> : <span className="slot-count">{count}{isSundrytray(batch) ? ' sundry' : ''}{batch.slotPart ? ` ${batch.slotPart}` : ''}</span>}
         </>
       ) : <span className="slot-empty-mark">-</span>}
     </div>
@@ -48,16 +48,16 @@ function ZoneBlock({ title, capacity, batches, labelPrefix }) {
 
 export function VanSlotSchematic({ stockBatches }) {
   const vanStock = stockBatches.filter((batch) => batch.location === 'van' && batch.quantity > 0);
-  const trayBatches = expandByLoadSlots(vanStock.filter((batch) => batch.loadType !== 'feature-pots' && batch.loadType !== 'sundry'), 'traySlots');
-  const featureBatches = expandByLoadSlots(vanStock.filter((batch) => batch.loadType === 'feature-pots'), 'featurePots');
-  const sundryBatches = expandByLoadSlots(vanStock.filter((batch) => batch.loadType === 'sundry'), 'sundrySlots');
+  const trayBatches = expandByLoadSlots(vanStock.filter((batch) => batch.loadType === 'tray'), 'traySlots');
+  const pottrayBatches = expandByLoadSlots(vanStock.filter((batch) => batch.loadType === 'pottray'), 'pottraySlots');
+  const sundrytrayBatches = expandByLoadSlots(vanStock.filter((batch) => batch.loadType === 'sundrytray'), 'sundrytraySlots');
   return (
     <div className="slot-schematic">
       <p className="eyebrow">Van schematic</p>
       <ZoneBlock title="Tray bay" capacity={VAN_LOAD_LIMITS.traySlots} batches={trayBatches} labelPrefix="Tray bay" />
-      <ZoneBlock title="Potted plant bay" capacity={VAN_LOAD_LIMITS.featurePots} batches={featureBatches} labelPrefix="Potted plant bay" />
-      <ZoneBlock title="Sundry bay" capacity={VAN_LOAD_LIMITS.sundrySlots} batches={sundryBatches} labelPrefix="Sundry bay" />
-      <p className="fine-print">Numbers show plants or sundry units left. Multi-slot grouped batches show their slot part. Sundries now use their own bay.</p>
+      <ZoneBlock title="Pottray bay" capacity={VAN_LOAD_LIMITS.pottraySlots} batches={pottrayBatches} labelPrefix="Pottray bay" />
+      <ZoneBlock title="Sundrytray bay" capacity={VAN_LOAD_LIMITS.sundrytraySlots} batches={sundrytrayBatches} labelPrefix="Sundrytray bay" />
+      <p className="fine-print">Numbers show units left. Display slots remain generic; only the van uses tray, pottray, and sundrytray buckets.</p>
     </div>
   );
 }
@@ -74,7 +74,7 @@ export function DisplaySlotSchematic({ stockBatches }) {
         });
         return <ZoneBlock key={zone.id} title={`${zoneLabel(zone.id)} (${zone.capacity})`} capacity={zone.capacity} batches={batches} labelPrefix={zone.label} />;
       })}
-      <p className="fine-print">15 display slots total. Numbers show plants left in each tray or potted batch. Bold numbers mean potted or feature plants rather than a tray.</p>
+      <p className="fine-print">Display slots are generic. A slot can hold one tray, pottray, or sundrytray.</p>
     </div>
   );
 }
