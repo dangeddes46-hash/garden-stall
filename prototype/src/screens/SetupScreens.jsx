@@ -17,8 +17,8 @@ function EveningOrderFeedback({ state }) {
     <div className="row-card column-card">
       <p className="eyebrow">Stall notebook</p>
       <h3>{feedback.title}</h3>
-      {feedback.lines.map((line) => <p className="fine-print" key={line}>• {line}</p>)}
-      {feedback.warnings.map((line) => <p className="fine-print capacity-warning" key={line}>• {line}</p>)}
+      {feedback.lines.map((line) => <p className="fine-print" key={line}>- {line}</p>)}
+      {feedback.warnings.map((line) => <p className="fine-print capacity-warning" key={line}>- {line}</p>)}
       {feedback.guidance.length > 0 && (
         <div className="stack nested-stack">
           {feedback.guidance.map((entry) => (
@@ -68,9 +68,7 @@ export function WholesalerScreen({ state, dispatch }) {
       <Card>
         <h2>Order Cart</h2>
         <p className="muted">{availableCount} trade lines available today.</p>
-        {state.cart.length === 0 ? (
-          <p>No stock selected yet.</p>
-        ) : (
+        {state.cart.length === 0 ? <p>No stock selected yet.</p> : (
           <div className="stack">
             {state.cart.map((item) => (
               <div key={item.id} className="row-card">
@@ -169,20 +167,20 @@ export function VanLoadoutScreen({ state, dispatch }) {
   const vanStock = getStockByLocation(state.stockBatches, 'van');
   const vanLoad = getVanLoadSummary(state.stockBatches);
   const trayFull = vanLoad.traySlots >= VAN_LOAD_LIMITS.traySlots;
-  const featureFull = vanLoad.featurePots >= VAN_LOAD_LIMITS.featurePots;
-  const sundryFull = vanLoad.sundrySlots >= VAN_LOAD_LIMITS.sundrySlots;
+  const pottrayFull = vanLoad.pottraySlots >= VAN_LOAD_LIMITS.pottraySlots;
+  const sundrytrayFull = vanLoad.sundrytraySlots >= VAN_LOAD_LIMITS.sundrytraySlots;
   return (
     <div className="screen-grid">
       <Card>
         <p className="eyebrow">Home Stock</p>
         <h2>Load the van</h2>
-        <p className="muted">Capacity is {VAN_LOAD_LIMITS.traySlots} tray spaces, {VAN_LOAD_LIMITS.featurePots} feature-pot spaces, and {VAN_LOAD_LIMITS.sundrySlots} sundry spaces. Potted lilies travel three to a feature-pot space.</p>
+        <p className="muted">Van capacity is {VAN_LOAD_LIMITS.traySlots} tray spaces, {VAN_LOAD_LIMITS.pottraySlots} pottray spaces, and {VAN_LOAD_LIMITS.sundrytraySlots} sundrytray spaces. Display slots remain generic.</p>
         <div className="button-row wrap-actions">
-          <button className="secondary" disabled={homeStock.length === 0 || (trayFull && featureFull && sundryFull)} onClick={() => dispatch({ type: 'AUTOLOAD_VAN' })}>Autoload varied van</button>
+          <button className="secondary" disabled={homeStock.length === 0 || (trayFull && pottrayFull && sundrytrayFull)} onClick={() => dispatch({ type: 'AUTOLOAD_VAN' })}>Autoload varied van</button>
           <button className="secondary" disabled={homeStock.length === 0} onClick={() => dispatch({ type: 'CONSOLIDATE_HOME_STOCK' })}>Consolidate home trays</button>
         </div>
-        <p className="fine-print">Autoload prefers variety first, then older home stock. It respects tray, feature-pot, and sundry capacity.</p>
-        {(trayFull || featureFull || sundryFull) && <p className="fine-print capacity-warning">Capacity warning: {trayFull ? 'tray space full ' : ''}{featureFull ? 'feature-pot space full ' : ''}{sundryFull ? 'sundry space full' : ''}.</p>}
+        <p className="fine-print">Autoload prefers variety first, then older home stock. It respects tray, pottray, and sundrytray van capacity.</p>
+        {(trayFull || pottrayFull || sundrytrayFull) && <p className="fine-print capacity-warning">Capacity warning: {trayFull ? 'tray space full ' : ''}{pottrayFull ? 'pottray space full ' : ''}{sundrytrayFull ? 'sundrytray space full' : ''}.</p>}
         <ExpandableStockList
           title="Home stock"
           batches={homeStock}
@@ -201,8 +199,8 @@ export function VanLoadoutScreen({ state, dispatch }) {
         <p className="fine-print">Load a balanced day rather than everything you own. You can leave stock at home for tomorrow.</p>
         <div className="totals">
           <div><span>Tray spaces</span><strong>{vanLoad.traySlots} / {VAN_LOAD_LIMITS.traySlots}</strong></div>
-          <div><span>Feature spaces</span><strong>{vanLoad.featurePots} / {VAN_LOAD_LIMITS.featurePots}</strong></div>
-          <div><span>Sundry spaces</span><strong>{vanLoad.sundrySlots} / {VAN_LOAD_LIMITS.sundrySlots}</strong></div>
+          <div><span>Pottray spaces</span><strong>{vanLoad.pottraySlots} / {VAN_LOAD_LIMITS.pottraySlots}</strong></div>
+          <div><span>Sundrytray spaces</span><strong>{vanLoad.sundrytraySlots} / {VAN_LOAD_LIMITS.sundrytraySlots}</strong></div>
           <div><span>Batches</span><strong>{vanLoad.batchCount}</strong></div>
         </div>
         <VanSlotSchematic stockBatches={state.stockBatches} />
@@ -241,7 +239,7 @@ export function DisplaySetupScreen({ state, dispatch }) {
       <Card>
         <p className="eyebrow">Display Setup</p>
         <h2>Zone placement and pricing</h2>
-        <p className="muted">Front Table suits colourful or giftable stock. Floor / Crates works for useful grow-your-own trays. Feature Spot is limited; save it for showier pots.</p>
+        <p className="muted">Display slots are generic: one tray, pottray, or sundrytray can occupy any single display slot.</p>
         <div className="button-row wrap-actions">
           <button className="secondary" disabled={vanStock.length === 0} onClick={() => dispatch({ type: 'AUTODISPLAY_STOCK' })}>Autodisplay varied stall</button>
         </div>
@@ -263,7 +261,7 @@ export function DisplaySetupScreen({ state, dispatch }) {
           <div><span>Score</span><strong>{displaySummary.score}</strong></div>
         </div>
         <DisplaySlotSchematic stockBatches={state.stockBatches} />
-        {displaySummary.notes.map((note) => <p key={note} className="fine-print">• {note}</p>)}
+        {displaySummary.notes.map((note) => <p key={note} className="fine-print">- {note}</p>)}
         <p className="fine-print">Watering helps dry stock, but repeated watering can overdo it.</p>
         <div className="button-row wrap-actions">
           <button className="secondary" disabled={displayStock.length + reducedStock.length === 0} onClick={() => dispatch({ type: 'CONSOLIDATE_VISIBLE_STOCK' })}>Consolidate visible trays</button>
