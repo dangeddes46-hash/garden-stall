@@ -6,7 +6,7 @@ Prototype 0.1 implementation is active from B-001.
 
 ## Current Milestone
 
-`0.1.24-daily-weekly-continuity`
+`0.1.25-stock-handling-summary-readability`
 
 ## Current Source of Truth
 
@@ -29,29 +29,25 @@ Implemented:
 - Day 0 / evening wholesaler ordering.
 - Morning collection into physical tray/pot stock batches.
 - Home, van, display, reduced, sold, and packed-home stock states.
-- Van capacity: 6 tray spaces plus 6 loose/feature potted plants.
-- Manual stock movement, pricing, reduced-area, and watering controls.
+- Van capacity: 6 tray spaces, 6 feature-pot spaces, and 3 sundry spaces.
+- Potted lilies use grouped feature-pot capacity: 1-3 lilies use 1 feature space, 4-6 use 2.
+- Sundries use their own van bay; compost bags and terracotta pot packs do not consume tray or feature-pot space.
+- Manual stock movement, pricing, reduced-area, watering, and compatible same-plant tray consolidation.
+- Consolidation controls are available for home stock, display setup, and the current stall.
 - Autoload varied van convenience action.
 - Autodisplay varied stall convenience action.
-- Compact van and 15-slot display schematics.
-- Display zones: Front Table, Floor / Crates, Feature Spot, and Reduced Area.
-- Per-batch condition, moisture, base/current retail price, and price band.
+- Compact van and display schematics, including separate sundry bay.
+- Per-batch condition, moisture, base/current retail price, price band, and rough wholesale value.
 - Passive customer trading checkpoints, sale reasons, missed-demand notes, and pricing notes.
-- Trading clock modes, with auto-advance paused while a special request is active.
-- Reducer guard preventing extra customer waves after packdown-ready / clock completion.
-- Special request generation, scoring, revenue, and request log.
-- Daily request log is treated as daily state and resets when a new order/day cycle begins.
-- Daily report with sales, money, blockers, leftovers, special requests, pricing, condition, notebook, and next-order guidance.
-- Lightweight week/run stats now accumulate after each completed day.
-- Daily Summary now includes a Week so far section.
-- Day 7 now routes safely to a minimal Weekly Summary screen.
-- Canonical report export lives in `prototype/src/systems/reportSystem.js` and includes week context.
+- Daily reports with sales, money, blockers, condition-aware leftovers, special requests, pricing, condition, notebook, and next-order guidance.
+- Lightweight week/run stats and minimal Weekly Summary.
+- Weekly Summary now includes daily breakdown and rough accounting.
+- Canonical Markdown/JSON report export includes Daily Review, Week So Far, Seven-Day Breakdown, Weekly Accounting, Stock Summary, raw Stock Batches, requests, pricing, notebook, and condition sections.
 - Headless reducer/system smoke test via `npm run smoke`.
-- Notebook discoveries remain readable feedback only for now.
 
 ## Current Priority
 
-Use the weekly continuity layer to make repeated days feel coherent without turning the game into a dashboard.
+Use the stock-handling and report-readability layer to see what careless play is really doing before any broad economy rebalance.
 
 Recommended local check:
 
@@ -75,8 +71,10 @@ npm.cmd run dev
 
 - This build still needs Daniel's local smoke test after pull.
 - The smoke test is headless and reducer/system-level, not a browser UI test.
+- Broad margin and demand rebalance are deliberately not included in 0.1.25.
+- Premium pricing may still sell too easily; this is now more visible in weekly accounting but not rebalanced yet.
 - Staff, upgrades, save/load, drag-and-drop display, final art, new plant systems, and new locations are deliberately not added yet.
-- Weekly summary is intentionally minimal: no scoring, achievements, staff pressure, upgrades, or progression rewards.
-- Trading balance, customer scoring, pricing, and condition pressure are still first-pass and need playtest feel.
+- Weekly summary is still readable-only: no scoring, achievements, staff pressure, upgrades, or progression rewards.
+- Trading balance, customer scoring, pricing, and condition pressure remain first-pass and need playtest feel.
 - Notebook entries are readable feedback only; they do not unlock skills or bonuses yet.
 - The app remains a local browser prototype with no backend.
