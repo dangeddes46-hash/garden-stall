@@ -3,7 +3,7 @@ import { createTradingClock } from '../systems/tradingClockSystem.js';
 import { createInitialWeekStats } from '../systems/weekStatsSystem.js';
 
 export const initialState = {
-  prototypeVersion: '0.1.24-daily-weekly-continuity',
+  prototypeVersion: '0.1.25-stock-handling-summary-readability',
   phase: PHASES.DAY0_ORDER,
   currentDay: 0,
   cash: STARTING_CASH,
