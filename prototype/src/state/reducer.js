@@ -11,6 +11,7 @@ import { applyEndOfDayConditionPressure, applyTradingWaveConditionPressure, summ
 import { advanceTradingClock, createTradingClock, getNextTradingCheckpoint, setTradingClockMode } from '../systems/tradingClockSystem.js';
 import { autoloadVan, autodisplayStock } from '../systems/autoStockSystem.js';
 import { updateWeekStats } from '../systems/weekStatsSystem.js';
+import { consolidateCompatibleStock } from '../systems/stockConsolidationSystem.js';
 import { initialState } from './initialState.js';
 
 function log(state, message) {
@@ -18,6 +19,12 @@ function log(state, message) {
     ...state,
     debugLog: [`Day ${state.currentDay}: ${message}`, ...state.debugLog].slice(0, 80)
   };
+}
+
+function dominantCondition(conditionCounts) {
+  const entries = Object.entries(conditionCounts ?? {});
+  if (entries.length === 0) return null;
+  return entries.sort((a, b) => b[1] - a[1])[0][0];
 }
 
 function summarizeUnsoldStock(stockBatches = []) {
@@ -28,7 +35,14 @@ function summarizeUnsoldStock(stockBatches = []) {
       batches: 0,
       units: 0,
       tiredBatches: 0,
-      reducedBatches: 0
+      reducedBatches: 0,
+      conditionCounts: {}
+    };
+    const condition = batch.condition ?? 'unknown';
+    const conditionUnits = current.conditionCounts[condition] ?? 0;
+    const conditionCounts = {
+      ...current.conditionCounts,
+      [condition]: conditionUnits + (batch.quantity ?? 0)
     };
     return {
       ...summary,
@@ -37,7 +51,10 @@ function summarizeUnsoldStock(stockBatches = []) {
         batches: current.batches + 1,
         units: current.units + (batch.quantity ?? 0),
         tiredBatches: current.tiredBatches + (['tired', 'past-peak'].includes(batch.condition) ? 1 : 0),
-        reducedBatches: current.reducedBatches + (batch.location === 'reduced-area' || batch.reduced ? 1 : 0)
+        reducedBatches: current.reducedBatches + (batch.location === 'reduced-area' || batch.reduced ? 1 : 0),
+        conditionCounts,
+        dominantCondition: dominantCondition(conditionCounts),
+        mixedCondition: Object.keys(conditionCounts).length > 1
       }
     };
   }, {});
@@ -52,9 +69,10 @@ function buildNextOrderGuidance({ packedStockSummary = [], tradingLog = [], pric
   const soldByBand = pricingSummary.soldByBand ?? pricingSummary.sold ?? {};
 
   if (topUnsold) {
+    const conditionText = topUnsold.mixedCondition ? 'mixed-condition' : topUnsold.dominantCondition;
     guidance.push({
       type: 'reduce-order-risk',
-      summary: `Do not blindly reorder ${topUnsold.plantName}. ${topUnsold.units} were packed home across ${topUnsold.batches} batch${topUnsold.batches === 1 ? '' : 'es'}.`,
+      summary: `Do not blindly reorder ${topUnsold.plantName}. ${topUnsold.units} ${conditionText ?? 'leftover'} units were packed home across ${topUnsold.batches} batch${topUnsold.batches === 1 ? '' : 'es'}.`,
       reason: 'Largest unsold line after packdown.'
     });
   }
@@ -176,6 +194,11 @@ function runRemainingTradingDay(state) {
   return log(nextState, `Debug resolved ${steps} trading checkpoint${steps === 1 ? '' : 's'} to ${nextState.tradingClock?.currentTime ?? 'unknown time'}.`);
 }
 
+function consolidateStock(state, scope, label) {
+  const result = consolidateCompatibleStock(state.stockBatches, scope);
+  return log({ ...state, stockBatches: result.stockBatches }, `${label}: merged ${result.mergedBatchCount} compatible batch${result.mergedBatchCount === 1 ? '' : 'es'} across ${result.groupCount} group${result.groupCount === 1 ? '' : 's'}.`);
+}
+
 export function reducer(state, action) {
   switch (action.type) {
     case 'ADD_TO_CART': {
@@ -253,7 +276,7 @@ export function reducer(state, action) {
       return log({ ...state, phase: PHASES.DISPLAY_SETUP }, 'Confirmed route and operating costs placeholder.');
 
     case 'LOAD_TO_VAN': {
-      if (!canLoadBatchToVan(state.stockBatches, action.batchId)) return log(state, 'Load blocked: van capacity is 6 trays and 6 feature potted plants.');
+      if (!canLoadBatchToVan(state.stockBatches, action.batchId)) return log(state, 'Load blocked: van capacity is 6 trays, 6 feature-pot spaces, and 3 sundry spaces.');
       return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'van') }, 'Loaded one tray batch into van.');
     }
 
@@ -261,6 +284,15 @@ export function reducer(state, action) {
       const result = autoloadVan(state.stockBatches);
       return log({ ...state, stockBatches: result.stockBatches }, `Autoloaded ${result.loadedCount} varied batch${result.loadedCount === 1 ? '' : 'es'} into the van, prioritising older plants.`);
     }
+
+    case 'CONSOLIDATE_HOME_STOCK':
+      return consolidateStock(state, 'home', 'Home consolidation');
+
+    case 'CONSOLIDATE_VISIBLE_STOCK':
+      return consolidateStock(state, 'visible', 'Visible stall consolidation');
+
+    case 'CONSOLIDATE_ALL_STOCK':
+      return consolidateStock(state, 'all', 'Debug consolidation');
 
     case 'UNLOAD_TO_HOME':
       return log({ ...state, stockBatches: moveStockBatch(state.stockBatches, action.batchId, 'home') }, 'Moved one tray batch back to home stock.');
@@ -362,6 +394,7 @@ export function reducer(state, action) {
         day: state.currentDay,
         cash: state.cash,
         locationId: state.selectedLocationId,
+        orderSpend: state.pendingOrders.filter((order) => order.dayPlaced === state.currentDay).reduce((sum, order) => sum + (order.total ?? 0), 0),
         revenue: revenue + requestRevenue,
         passiveRevenue: revenue,
         requestRevenue,
