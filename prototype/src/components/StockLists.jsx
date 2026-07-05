@@ -9,6 +9,10 @@ import { money, zoneLabel } from './ui.jsx';
 const activeDisplayZones = DISPLAY_ZONES.filter((zone) => zone.id !== 'reduced-area');
 const visiblePriceBands = ['bargain', 'normal', 'premium', 'reduced'];
 
+function canWaterBatch(batch) {
+  return ['display', 'reduced-area'].includes(batch.location) && (batch.quantity ?? 0) > 0 && !['sold', 'discarded'].includes(batch.location) && batch.loadType !== 'sundrytray';
+}
+
 export function PriceButtons({ batch, dispatch }) {
   return (
     <div className="price-actions">
@@ -72,17 +76,18 @@ export function TrayRow({ batch, actionLabel, actionType, actionState = null, al
   const zoneId = ['display', 'reduced-area'].includes(batch.location) ? getBatchDisplayZoneId(batch) : null;
   const disabled = actionState?.disabled ?? false;
   const actionTitle = actionState?.reason ?? actionLabel;
+  const showWater = allowWater && canWaterBatch(batch);
   return (
     <div className="row-card tray-card">
       <div className="tray-details">
-        <strong>{batch.batchLabel ?? 'tray'} · {batch.quantity} left · {money(batch.unitRetailPrice)} each</strong>
-        <p className="fine-print">Average tray health: {batch.condition} · {describeMoistureForPlayer(batch.moisture)} · {describePriceBand(batch.priceBand)}</p>
-        <p className="fine-print">Plant records: {plantCount} active · {batch.quantitySold ?? 0} sold{zoneId ? ` · ${zoneLabel(zoneId)}` : ''}</p>
+        <strong>{batch.batchLabel ?? 'batch'} · {batch.quantity} left · {money(batch.unitRetailPrice)} each</strong>
+        <p className="fine-print">Average batch health: {batch.condition} · {describeMoistureForPlayer(batch.moisture)} · {describePriceBand(batch.priceBand)}</p>
+        <p className="fine-print">Unit records: {plantCount} active · {batch.quantitySold ?? 0} sold{zoneId ? ` · ${zoneLabel(zoneId)}` : ''}</p>
         {actionState?.reason && disabled && <p className="fine-print capacity-warning">{actionState.reason}</p>}
         {allowPricing && <PriceButtons batch={batch} dispatch={dispatch} />}
       </div>
       <div className="row-actions wrap-actions tray-actions">
-        {allowWater && <button className="secondary" title="Watering helps dry stock. Repeated watering on the same batch can overdo it." onClick={() => dispatch({ type: 'WATER_STOCK_BATCH', batchId: batch.id })}>Water tray</button>}
+        {showWater && <button className="secondary" title="Watering helps dry stock. Repeated watering on the same batch can overdo it." onClick={() => dispatch({ type: 'WATER_STOCK_BATCH', batchId: batch.id })}>Water batch</button>}
         {actionType && <button disabled={disabled} title={actionTitle} onClick={() => dispatch({ type: actionType, batchId: batch.id })}>{disabled ? actionState?.label ?? actionLabel : actionLabel}</button>}
         {extraActions}
       </div>
@@ -110,7 +115,7 @@ export function ExpandableStockList({ title, batches, emptyText, actionLabel, ac
           {groups.map((group) => (
             <div key={group.key} className="column-card row-card">
               <button className="link-button" onClick={() => toggle(group)}>
-                {isOpen(group) ? '▾' : '▸'} {group.plantName} — {group.trayCount} {group.trayCount === 1 ? 'tray' : 'trays'}, {group.totalUnits} {group.totalUnits === 1 ? 'plant' : 'plants'}
+                {isOpen(group) ? 'v' : '>'} {group.plantName} - {group.trayCount} {group.trayCount === 1 ? 'batch' : 'batches'}, {group.totalUnits} {group.totalUnits === 1 ? 'unit' : 'units'}
               </button>
               {isOpen(group) && (
                 <div className="stack nested-stack">
@@ -148,26 +153,9 @@ export function ReducedStockList({ batches, emptyText, stockBatches, dispatch })
       renderExtraActions={(batch) => (
         <>
           <ZonePlacementButtons batch={batch} dispatch={dispatch} stockBatches={stockBatches} returnFromReduced />
-          <button className="secondary" onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_VAN', batchId: batch.id })}>Return van</button>
+          <button className="secondary" onClick={() => dispatch({ type: 'RETURN_REDUCED_TO_VAN', batchId: batch.id })}>Van</button>
         </>
       )}
     />
-  );
-}
-
-export function ZoneUsagePanel({ displaySummary }) {
-  return (
-    <div className="display-zones">
-      {displaySummary.zoneUsage.map((zone) => {
-        const isFull = zone.remainingSlots <= 0;
-        return (
-          <div className={`zone ${isFull ? 'zone-full' : ''}`} key={zone.id}>
-            <strong>{zone.label}</strong>
-            <span>{zone.usedSlots} / {zone.capacity} slots{isFull ? ' · full' : ''}</span>
-            <p>{zone.note}</p>
-          </div>
-        );
-      })}
-    </div>
   );
 }
