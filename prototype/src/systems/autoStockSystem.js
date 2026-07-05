@@ -22,7 +22,7 @@ function potentialValue(batch) {
 function displayValue(batch) {
   const tags = plantTags(batch);
   let score = potentialValue(batch);
-  if (batch.loadType === 'feature-pots') score += 20;
+  if (batch.loadType === 'pottray') score += 20;
   if (tags.includes('giftable')) score += 12;
   if (tags.includes('flowering') || tags.includes('colourful') || tags.includes('cheerful')) score += 8;
   if (tags.includes('edible') || tags.includes('grow-your-own') || tags.includes('useful')) score += 4;
@@ -113,9 +113,9 @@ function chooseZone(batch, zoneUse) {
   const zoneById = Object.fromEntries(DISPLAY_ZONES.map((zone) => [zone.id, zone]));
   const room = (zoneId) => (zoneUse[zoneId] ?? 0) < (zoneById[zoneId]?.capacity ?? 0);
 
-  if ((batch.loadType === 'feature-pots' || tags.includes('giftable') || tags.includes('flowering')) && room('feature-spot')) return 'feature-spot';
+  if ((batch.loadType === 'pottray' || tags.includes('giftable') || tags.includes('flowering')) && room('feature-spot')) return 'feature-spot';
   if ((tags.includes('colourful') || tags.includes('cheerful') || tags.includes('giftable')) && room('front-table')) return 'front-table';
-  if ((tags.includes('edible') || tags.includes('grow-your-own') || tags.includes('useful') || batch.loadType === 'sundry') && room('floor-crates')) return 'floor-crates';
+  if ((tags.includes('edible') || tags.includes('grow-your-own') || tags.includes('useful') || batch.loadType === 'sundrytray') && room('floor-crates')) return 'floor-crates';
   if (room('front-table')) return 'front-table';
   if (room('floor-crates')) return 'floor-crates';
   if (room('feature-spot')) return 'feature-spot';
