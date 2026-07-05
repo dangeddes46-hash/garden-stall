@@ -1,6 +1,5 @@
-import { PHASE_LABELS, DISPLAY_ZONES } from '../data/constants.js';
+import { PHASE_LABELS, DISPLAY_ZONES, STARTING_CASH } from '../data/constants.js';
 import { locationById } from '../data/locations.js';
-import { STARTING_CASH } from '../data/constants.js';
 import { describeMoistureForPlayer, summarizeConditionEvents } from './conditionSystem.js';
 import { describePriceBand } from './pricingSystem.js';
 import { buildWeekStrategyNote } from './weekStatsSystem.js';
@@ -111,7 +110,7 @@ function buildWeeklyAccounting(state) {
   const unsellable = remainingStock.filter((batch) => batch.condition === 'unsellable');
   const unsellableUnits = unsellable.reduce((sum, batch) => sum + (batch.quantity ?? 0), 0);
   const unsellableValue = unsellable.reduce((sum, batch) => sum + ((batch.wholesaleCostPerUnit ?? 0) * (batch.quantity ?? 0)), 0);
-  const premiumRevenue = reports.reduce((sum, report) => sum + (report.pricingSummary?.revenueByBand?.premium ?? 0), 0);
+  const premiumRevenue = reports.reduce((sum, report) => sum + (report.pricingSummary?.revenue?.premium ?? 0), 0);
   const premiumShare = totalRevenue > 0 ? `${Math.round((premiumRevenue / totalRevenue) * 100)}%` : '0%';
   return [`- Starting cash: ${money(STARTING_CASH)}`, `- Total order spend: ${money(totalOrderSpend)}`, `- Total revenue: ${money(totalRevenue)}`, `- Final cash: ${money(state.cash)}`, `- Cash gain/loss versus start: ${money((state.cash ?? 0) - STARTING_CASH)}`, `- Remaining stock units: ${remainingUnits}`, `- Rough remaining wholesale value: ${money(remainingWholesaleValue)}`, `- Unsellable stock: ${unsellableUnits} units / ${money(unsellableValue)}`, `- Premium revenue/share: ${money(premiumRevenue)} / ${premiumShare}`].join('\n');
 }
@@ -134,9 +133,7 @@ export function createMarkdownReport(state) {
   const pricingLines = report?.pricingSummary?.notes?.length ? report.pricingSummary.notes.map((note) => `- ${note}`).join('\n') : '- No pricing summary yet';
   const notebookLines = state.notebook?.discoveries?.length ? state.notebook.discoveries.map((entry) => `- ${entry.title} (${entry.category}, Day ${entry.discoveredDay}): ${entry.text}`).join('\n') : '- No notebook discoveries yet';
   const moneyLines = report ? `- Passive trade: ${money(report.passiveRevenue)}\n- Requests: ${money(report.requestRevenue)}\n- Unsold batches packed home: ${report.packedCount ?? 0}` : '- No daily money summary yet';
-
-  return `# Garden Stall Prototype 0.1 Debug Report\n\n` +
-    `Generated: ${new Date().toISOString()}\n\n` +
+  return `# Garden Stall Prototype 0.1 Debug Report\n\nGenerated: ${new Date().toISOString()}\n\n` +
     `## Current State\n\n- Day: ${state.currentDay}\n- Phase: ${PHASE_LABELS[state.phase] ?? state.phase}\n- Cash: ${money(state.cash)}\n- Location: ${locationName}\n\n` +
     `## Daily Review\n\n### What Sold\n\n${buildSalesLines(report)}\n\n### What Did Not Sell\n\n${buildUnsoldLines(report)}\n\n### Money\n\n${moneyLines}\n\n### What Held Sales Back\n\n${buildPressureLines(report)}\n\n### Next Order Guidance\n\n${buildOrderGuidanceLines(report)}\n\n### Try Tomorrow\n\n${buildTomorrowLines(report)}\n\n` +
     `## Week So Far\n\n${buildWeekLines(state)}\n\n## Seven-Day Breakdown\n\n${buildDailyBreakdown(state)}\n\n## Weekly Accounting\n\n${buildWeeklyAccounting(state)}\n\n` +
