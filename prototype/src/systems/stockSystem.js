@@ -1,4 +1,4 @@
-import { FEATURE_POT_UNITS_PER_SLOT, SUNDRY_UNITS_PER_SLOT, VAN_LOAD_LIMITS } from '../data/vanCapacity.js';
+import { POTTRAY_UNITS_PER_SLOT, SUNDRYTRAY_UNITS_PER_SLOT, VAN_LOAD_LIMITS } from '../data/vanCapacity.js';
 import { markUnitsSold } from './healthProfileSystem.js';
 import { applyPriceBand } from './pricingSystem.js';
 
@@ -6,37 +6,37 @@ export function getStockByLocation(stockBatches, location) {
   return stockBatches.filter((batch) => batch.location === location && batch.quantity > 0);
 }
 
-export function getFeaturePotSlotsForBatch(batch) {
-  const unitsPerSlot = FEATURE_POT_UNITS_PER_SLOT[batch.plantId] ?? 1;
+export function getPottraySlotsForBatch(batch) {
+  const unitsPerSlot = POTTRAY_UNITS_PER_SLOT[batch.plantId] ?? 1;
   return Math.ceil((batch.quantity ?? 0) / unitsPerSlot);
 }
 
-export function getSundrySlotsForBatch(batch) {
-  const unitsPerSlot = SUNDRY_UNITS_PER_SLOT[batch.plantId] ?? 1;
+export function getSundrytraySlotsForBatch(batch) {
+  const unitsPerSlot = SUNDRYTRAY_UNITS_PER_SLOT[batch.plantId] ?? 1;
   return Math.ceil((batch.quantity ?? 0) / unitsPerSlot);
 }
 
 export function getBatchVanLoad(batch) {
-  if (batch.loadType === 'feature-pots') {
+  if (batch.loadType === 'pottray') {
     return {
       traySlots: 0,
-      featurePots: getFeaturePotSlotsForBatch(batch),
-      sundrySlots: 0
+      pottraySlots: getPottraySlotsForBatch(batch),
+      sundrytraySlots: 0
     };
   }
 
-  if (batch.loadType === 'sundry') {
+  if (batch.loadType === 'sundrytray') {
     return {
       traySlots: 0,
-      featurePots: 0,
-      sundrySlots: getSundrySlotsForBatch(batch)
+      pottraySlots: 0,
+      sundrytraySlots: getSundrytraySlotsForBatch(batch)
     };
   }
 
   return {
     traySlots: 1,
-    featurePots: 0,
-    sundrySlots: 0
+    pottraySlots: 0,
+    sundrytraySlots: 0
   };
 }
 
@@ -45,11 +45,11 @@ export function getVanLoadSummary(stockBatches) {
     const load = getBatchVanLoad(batch);
     return {
       traySlots: summary.traySlots + load.traySlots,
-      featurePots: summary.featurePots + load.featurePots,
-      sundrySlots: summary.sundrySlots + load.sundrySlots,
+      pottraySlots: summary.pottraySlots + load.pottraySlots,
+      sundrytraySlots: summary.sundrytraySlots + load.sundrytraySlots,
       batchCount: summary.batchCount + 1
     };
-  }, { traySlots: 0, featurePots: 0, sundrySlots: 0, batchCount: 0 });
+  }, { traySlots: 0, pottraySlots: 0, sundrytraySlots: 0, batchCount: 0 });
 }
 
 export function getVanLoadStatus(stockBatches, batchId) {
@@ -61,16 +61,16 @@ export function getVanLoadStatus(stockBatches, batchId) {
 
   const incoming = getBatchVanLoad(batch);
   const nextTraySlots = current.traySlots + incoming.traySlots;
-  const nextFeaturePots = current.featurePots + incoming.featurePots;
-  const nextSundrySlots = current.sundrySlots + incoming.sundrySlots;
+  const nextPottraySlots = current.pottraySlots + incoming.pottraySlots;
+  const nextSundrytraySlots = current.sundrytraySlots + incoming.sundrytraySlots;
   const trayOverflow = nextTraySlots > VAN_LOAD_LIMITS.traySlots;
-  const featureOverflow = nextFeaturePots > VAN_LOAD_LIMITS.featurePots;
-  const sundryOverflow = nextSundrySlots > VAN_LOAD_LIMITS.sundrySlots;
+  const pottrayOverflow = nextPottraySlots > VAN_LOAD_LIMITS.pottraySlots;
+  const sundrytrayOverflow = nextSundrytraySlots > VAN_LOAD_LIMITS.sundrytraySlots;
 
   const blocks = [];
   if (trayOverflow) blocks.push(`tray space is full (${current.traySlots}/${VAN_LOAD_LIMITS.traySlots})`);
-  if (featureOverflow) blocks.push(`feature-pot space is full (${current.featurePots}/${VAN_LOAD_LIMITS.featurePots})`);
-  if (sundryOverflow) blocks.push(`sundry space is full (${current.sundrySlots}/${VAN_LOAD_LIMITS.sundrySlots})`);
+  if (pottrayOverflow) blocks.push(`pottray space is full (${current.pottraySlots}/${VAN_LOAD_LIMITS.pottraySlots})`);
+  if (sundrytrayOverflow) blocks.push(`sundrytray space is full (${current.sundrytraySlots}/${VAN_LOAD_LIMITS.sundrytraySlots})`);
 
   if (blocks.length > 0) {
     return { canLoad: false, reason: `Van ${blocks.join(' and ')}.` };
