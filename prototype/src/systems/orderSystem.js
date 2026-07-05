@@ -1,5 +1,4 @@
 import { calculateOrderFee } from '../data/supplierListings.js';
-import { FEATURE_POT_UNITS_PER_SLOT } from '../data/vanCapacity.js';
 import { plantById } from '../data/plants.js';
 
 export function calculateCart(cart) {
@@ -41,16 +40,16 @@ function createPlantHealthProfiles({ item, plant, batchId, quantity }) {
   }));
 }
 
-function createStockBatch({ order, item, plant, itemIndex, batchIndex, quantity, batchLabel, batchType, loadType }) {
+function createStockBatch({ order, item, plant, itemIndex, batchIndex }) {
   const batchId = `${order.id}-batch-${itemIndex}-${batchIndex}-${item.plantId}`;
   return {
     id: batchId,
     sourceOrderId: order.id,
     plantId: item.plantId,
     plantName: plant.displayName,
-    quantity,
+    quantity: item.quantity,
     quantitySold: 0,
-    unitHealth: createPlantHealthProfiles({ item, plant, batchId, quantity }),
+    unitHealth: createPlantHealthProfiles({ item, plant, batchId, quantity: item.quantity }),
     unitHealthModel: 'per-plant-average',
     baseRetailPrice: item.suggestedRetail,
     unitRetailPrice: item.suggestedRetail,
@@ -60,57 +59,19 @@ function createStockBatch({ order, item, plant, itemIndex, batchIndex, quantity,
     location: 'home',
     zoneId: null,
     reduced: false,
-    batchType,
-    batchLabel,
-    loadType,
+    batchType: item.batchType,
+    batchLabel: item.batchLabel,
+    loadType: item.loadType,
     wholesaleCost: item.wholesaleCost,
     wholesaleCostPerUnit: item.quantity ? item.wholesaleCost / item.quantity : item.wholesaleCost,
     notes: [item.supplierNote].filter(Boolean)
   };
 }
 
-function createFeaturePotBatches({ order, item, plant, itemIndex }) {
-  const unitsPerBatch = FEATURE_POT_UNITS_PER_SLOT[item.plantId] ?? 1;
-  const totalUnits = item.count * item.quantity;
-  const batchCount = Math.ceil(totalUnits / unitsPerBatch);
-
-  return Array.from({ length: batchCount }, (_, potIndex) => {
-    const remaining = totalUnits - (potIndex * unitsPerBatch);
-    const quantity = Math.min(unitsPerBatch, remaining);
-    const grouped = unitsPerBatch > 1;
-    return createStockBatch({
-      order,
-      item,
-      plant,
-      itemIndex,
-      batchIndex: potIndex,
-      quantity,
-      batchLabel: grouped ? `${quantity} grouped feature pots` : 'single feature pot',
-      batchType: grouped ? 'feature-pot-grouped' : 'feature-pot',
-      loadType: 'feature-pots'
-    });
-  });
-}
-
 export function createStockBatchesFromOrder(order) {
   return order.items.flatMap((item, itemIndex) => {
     const plant = plantById[item.plantId];
     if (!plant) return [];
-
-    if (item.loadType === 'feature-pots') {
-      return createFeaturePotBatches({ order, item, plant, itemIndex });
-    }
-
-    return Array.from({ length: item.count }, (_, trayIndex) => createStockBatch({
-      order,
-      item,
-      plant,
-      itemIndex,
-      batchIndex: trayIndex,
-      quantity: item.quantity,
-      batchLabel: item.batchLabel,
-      batchType: item.batchType,
-      loadType: item.loadType
-    }));
+    return Array.from({ length: item.count }, (_, batchIndex) => createStockBatch({ order, item, plant, itemIndex, batchIndex }));
   });
 }
