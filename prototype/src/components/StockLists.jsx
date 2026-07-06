@@ -71,6 +71,19 @@ export function ZonePlacementButtons({ batch, dispatch, stockBatches, includeRed
   );
 }
 
+export function ZoneUsagePanel({ displaySummary }) {
+  const zoneUsage = displaySummary?.zoneUsage ?? [];
+  if (zoneUsage.length === 0) return null;
+  return (
+    <div className="zone-usage-panel stack">
+      <h3>Display slots</h3>
+      {zoneUsage.map((zone) => (
+        <p className="fine-print" key={zone.id}>{zone.label}: {zone.usedSlots} / {zone.capacity} used</p>
+      ))}
+    </div>
+  );
+}
+
 export function TrayRow({ batch, actionLabel, actionType, actionState = null, allowWater = false, allowPricing = true, dispatch, extraActions = null }) {
   const plantCount = batch.unitHealth?.filter((unit) => !unit.sold).length ?? batch.quantity;
   const zoneId = ['display', 'reduced-area'].includes(batch.location) ? getBatchDisplayZoneId(batch) : null;
